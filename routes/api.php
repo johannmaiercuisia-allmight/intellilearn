@@ -6,6 +6,10 @@ use App\Http\Controllers\LessonController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\GradeController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -35,6 +39,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/email/resend', [AuthController::class, 'resendVerification']);
+
+    // --- PROFILE ---
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::put('/profile/password', [ProfileController::class, 'changePassword']);
 
     // --- COURSES ---
     Route::get('/courses', [CourseController::class, 'index']);
@@ -80,6 +88,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/courses/{course}/assessments/{assessment}/submissions', [SubmissionController::class, 'index']);
     Route::get('/courses/{course}/assessments/{assessment}/submissions/{submission}', [SubmissionController::class, 'show']);
     Route::put('/courses/{course}/assessments/{assessment}/submissions/{submission}/grade', [SubmissionController::class, 'grade']);
+
+    // --- ANNOUNCEMENTS ---
+    Route::get('/courses/{course}/announcements', [AnnouncementController::class, 'index']);
+    Route::post('/courses/{course}/announcements', [AnnouncementController::class, 'store']);
+    Route::put('/courses/{course}/announcements/{announcement}', [AnnouncementController::class, 'update']);
+    Route::delete('/courses/{course}/announcements/{announcement}', [AnnouncementController::class, 'destroy']);
+
+    // --- CALENDAR ---
+    Route::get('/calendar', [CalendarController::class, 'index']);
+    Route::post('/courses/{course}/calendar', [CalendarController::class, 'store']);
+    Route::put('/calendar/{calendarEvent}', [CalendarController::class, 'update']);
+    Route::delete('/calendar/{calendarEvent}', [CalendarController::class, 'destroy']);
+
+    // --- GRADES ---
+    Route::get('/courses/{course}/grades', [GradeController::class, 'index']);
+    Route::post('/courses/{course}/grades/compute', [GradeController::class, 'compute']);
 
     // --- ADMIN USER MANAGEMENT ---
     Route::get('/admin/users', [AdminController::class, 'listUsers']);
