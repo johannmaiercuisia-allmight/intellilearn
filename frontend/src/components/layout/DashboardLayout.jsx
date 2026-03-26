@@ -123,7 +123,7 @@ export default function DashboardLayout({ children }) {
     <div className="dashboard-shell">
       {sidebarOpen && <div className="overlay" onClick={() => setSidebarOpen(false)} />}
 
-      <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
+      <aside className={`sidebar role-${user?.role || 'student'} ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-logo">
           <span className="dot">IL</span> Intellilearn
         </div>

@@ -7,6 +7,8 @@
   --sidebar-active: rgba(139,92,246,0.35);
   --sidebar-text: rgba(255,255,255,0.65);
   --sidebar-text-active: #ffffff;
+  --sidebar-accent: #8b5cf6;
+  --sidebar-accent-shadow: rgba(139,92,246,0.4);
   --sidebar-width: 230px;
 
   --bg-main: #f5f6fa;
@@ -28,6 +30,42 @@
   --radius-card: 16px;
   --radius-btn: 10px;
 }
+
+/* Student — pastel violet */
+.sidebar.role-student {
+  background: #7c3aed;
+  border-right-color: #6d28d9;
+  box-shadow: 4px 0 24px rgba(124,58,237,0.15);
+}
+.sidebar.role-student .sidebar-logo span.dot { background: linear-gradient(135deg, #c4b5fd, #ede9fe); color: #5b21b6; box-shadow: 0 4px 12px rgba(196,181,253,0.4); }
+.sidebar.role-student .nav-item.active { background: rgba(255,255,255,0.18); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2); }
+.sidebar.role-student .nav-item:hover { background: rgba(255,255,255,0.1); }
+.sidebar.role-student .sidebar-profile { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
+.sidebar.role-student .avatar { background: linear-gradient(135deg, #c4b5fd, #ede9fe); color: #5b21b6; box-shadow: 0 2px 8px rgba(196,181,253,0.4); }
+
+/* Instructor — pastel orange */
+.sidebar.role-instructor {
+  background: #ea580c;
+  border-right-color: #c2410c;
+  box-shadow: 4px 0 24px rgba(234,88,12,0.15);
+}
+.sidebar.role-instructor .sidebar-logo span.dot { background: linear-gradient(135deg, #fdba74, #fff7ed); color: #9a3412; box-shadow: 0 4px 12px rgba(253,186,116,0.4); }
+.sidebar.role-instructor .nav-item.active { background: rgba(255,255,255,0.18); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2); }
+.sidebar.role-instructor .nav-item:hover { background: rgba(255,255,255,0.1); }
+.sidebar.role-instructor .sidebar-profile { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
+.sidebar.role-instructor .avatar { background: linear-gradient(135deg, #fdba74, #fff7ed); color: #9a3412; box-shadow: 0 2px 8px rgba(253,186,116,0.4); }
+
+/* Admin — pastel green */
+.sidebar.role-admin {
+  background: #16a34a;
+  border-right-color: #15803d;
+  box-shadow: 4px 0 24px rgba(22,163,74,0.15);
+}
+.sidebar.role-admin .sidebar-logo span.dot { background: linear-gradient(135deg, #86efac, #f0fdf4); color: #14532d; box-shadow: 0 4px 12px rgba(134,239,172,0.4); }
+.sidebar.role-admin .nav-item.active { background: rgba(255,255,255,0.18); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2); }
+.sidebar.role-admin .nav-item:hover { background: rgba(255,255,255,0.1); }
+.sidebar.role-admin .sidebar-profile { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
+.sidebar.role-admin .avatar { background: linear-gradient(135deg, #86efac, #f0fdf4); color: #14532d; box-shadow: 0 2px 8px rgba(134,239,172,0.4); }
 
 *, *::before, *::after {
   box-sizing: border-box;
