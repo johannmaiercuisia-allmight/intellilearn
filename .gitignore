@@ -18,6 +18,10 @@
 /public/storage
 /storage/*.key
 /storage/pail
+
+# Frontend
+/frontend/node_modules
+/frontend/dist
 /vendor
 Homestead.json
 Homestead.yaml
