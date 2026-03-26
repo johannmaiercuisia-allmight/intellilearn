@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import PushPinIcon from '@mui/icons-material/PushPin';
 
 export default function InstructorCoursePage() {
   const { courseId } = useParams();
+  const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [assessments, setAssessments] = useState([]);
@@ -18,6 +19,7 @@ export default function InstructorCoursePage() {
   const [showQuestionForm, setShowQuestionForm] = useState(null);
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
   const [showEventForm, setShowEventForm] = useState(false);
+  const [showMaterialForm, setShowMaterialForm] = useState(null); // lessonId
 
   const fetchData = () => {
     Promise.all([
@@ -97,11 +99,14 @@ export default function InstructorCoursePage() {
           {showLessonForm && (
             <LessonForm courseId={courseId} onClose={() => setShowLessonForm(false)} onSuccess={() => { setShowLessonForm(false); fetchData(); }} />
           )}
+          {showMaterialForm && (
+            <MaterialUploadForm courseId={courseId} lessonId={showMaterialForm} onClose={() => setShowMaterialForm(null)} onSuccess={() => { setShowMaterialForm(null); fetchData(); }} />
+          )}
           {lessons.length === 0 ? (
             <p className="text-slate-500 bg-white rounded-xl border border-slate-200 p-6 text-center">No lessons yet.</p>
           ) : (
             lessons.map((lesson) => (
-              <div key={lesson.id} className="bg-white rounded-xl border border-slate-200 p-5">
+              <div key={lesson.id} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-semibold text-slate-800">Lesson {lesson.order + 1}: {lesson.title}</h4>
@@ -112,8 +117,38 @@ export default function InstructorCoursePage() {
                       </span>
                     </div>
                   </div>
-                  <span className="text-xs text-slate-400">{lesson.materials?.length || 0} materials</span>
+                  <button onClick={() => setShowMaterialForm(lesson.id)}
+                    className="text-sm text-teal-600 hover:text-teal-700 font-medium shrink-0">
+                    + Upload File
+                  </button>
                 </div>
+                {/* Materials list */}
+                {lesson.materials && lesson.materials.length > 0 && (
+                  <div className="border-t border-slate-100 pt-3 space-y-2">
+                    {lesson.materials.map((m) => (
+                      <div key={m.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{m.type === 'pdf' ? '📄' : m.type === 'docx' ? '📝' : m.type === 'link' ? '🔗' : '📎'}</span>
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">{m.title}</p>
+                            <p className="text-xs text-slate-400 uppercase">{m.type}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {(m.file_url || m.url) && (
+                            <a href={m.file_url || m.url} target="_blank" rel="noopener noreferrer"
+                              className="text-xs text-teal-600 hover:text-teal-800 font-medium">View</a>
+                          )}
+                          <button onClick={async () => {
+                            if (!confirm('Delete this material?')) return;
+                            await api.delete(`/courses/${courseId}/lessons/${lesson.id}/materials/${m.id}`);
+                            fetchData();
+                          }} className="text-xs text-red-400 hover:text-red-600">Delete</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -123,7 +158,7 @@ export default function InstructorCoursePage() {
       {/* Assessments tab */}
       {tab === 'assessments' && (
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
             <button onClick={() => setShowAssessmentForm(true)}
               className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors">
               + New Assessment
@@ -140,18 +175,26 @@ export default function InstructorCoursePage() {
           ) : (
             assessments.map((a) => (
               <div key={a.id} className="bg-white rounded-xl border border-slate-200 p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-semibold text-slate-800">{a.title}</h4>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full capitalize">{a.type.replace('_', ' ')}</span>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/instructor/courses/${courseId}/assessments/${a.id}`)}>
+                    <h4 className="font-semibold text-slate-800 hover:text-teal-700 transition-colors">{a.title}</h4>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full capitalize">{a.type.replace(/_/g, ' ')}</span>
                       <span className="text-xs text-slate-400">{a.questions_count || 0} questions · {a.total_points} pts</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${a.is_published ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                         {a.is_published ? 'Published' : 'Draft'}
                       </span>
                     </div>
                   </div>
-                  <button onClick={() => setShowQuestionForm(a.id)} className="text-sm text-teal-600 hover:text-teal-700 font-medium">+ Add Questions</button>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <button onClick={() => setShowQuestionForm(a.id)} className="text-sm text-teal-600 hover:text-teal-700 font-medium">+ Questions</button>
+                    <button onClick={() => navigate(`/instructor/courses/${courseId}/assessments/${a.id}`)} className="text-sm text-slate-500 hover:text-slate-700 font-medium">Results</button>
+                    <button onClick={async () => {
+                      if (!confirm('Delete this assessment?')) return;
+                      await api.delete(`/courses/${courseId}/assessments/${a.id}`);
+                      fetchData();
+                    }} className="text-sm text-red-400 hover:text-red-600 font-medium">Delete</button>
+                  </div>
                 </div>
               </div>
             ))
@@ -445,6 +488,80 @@ function QuestionForm({ courseId, assessmentId, onClose, onSuccess }) {
             {saving ? 'Saving...' : `Save ${questions.length} Question${questions.length > 1 ? 's' : ''}`}
           </button>
           <button type="button" onClick={onClose} className="bg-white text-slate-700 px-5 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 border border-slate-300 transition-colors">Cancel</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function MaterialUploadForm({ courseId, lessonId, onClose, onSuccess }) {
+  const [form, setForm] = useState({ title: '', type: 'pdf' });
+  const [file, setFile] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [progress, setProgress] = useState(0);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!file) { setError('Please select a file.'); return; }
+    setSaving(true); setError('');
+
+    const data = new FormData();
+    data.append('title', form.title);
+    data.append('type', form.type);
+    data.append('file', file);
+
+    try {
+      await api.post(`/courses/${courseId}/lessons/${lessonId}/materials`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (e) => setProgress(Math.round((e.loaded / e.total) * 100)),
+      });
+      onSuccess();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Upload failed.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-teal-50 rounded-xl border border-teal-200 p-6">
+      <h4 className="font-semibold text-slate-800 mb-4">Upload Module File</h4>
+      {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <input type="text" placeholder="File title (e.g. Week 1 Module)" value={form.title} required
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+        <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
+          className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+          <option value="pdf">PDF</option>
+          <option value="docx">Word Document (DOCX)</option>
+        </select>
+        <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-teal-400 transition-colors">
+          <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setFile(e.target.files[0])}
+            className="hidden" id="file-upload" />
+          <label htmlFor="file-upload" className="cursor-pointer">
+            {file ? (
+              <p className="text-sm text-teal-700 font-medium">📎 {file.name}</p>
+            ) : (
+              <p className="text-sm text-slate-500">Click to select a PDF or DOCX file <span className="text-xs block mt-1 text-slate-400">Max 50MB</span></p>
+            )}
+          </label>
+        </div>
+        {saving && progress > 0 && (
+          <div className="w-full bg-slate-200 rounded-full h-2">
+            <div className="bg-teal-500 h-2 rounded-full transition-all" style={{ width: `${progress}%` }}></div>
+          </div>
+        )}
+        <div className="flex gap-3">
+          <button type="submit" disabled={saving}
+            className="bg-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors">
+            {saving ? `Uploading ${progress}%...` : 'Upload File'}
+          </button>
+          <button type="button" onClick={onClose}
+            className="bg-white text-slate-700 px-5 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 border border-slate-300 transition-colors">
+            Cancel
+          </button>
         </div>
       </form>
     </div>

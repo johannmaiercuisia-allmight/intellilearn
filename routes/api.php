@@ -105,6 +105,67 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/courses/{course}/grades', [GradeController::class, 'index']);
     Route::post('/courses/{course}/grades/compute', [GradeController::class, 'compute']);
 
+    // --- STUDENT ACTIVITY FEED ---
+    Route::get('/student/feed', function (\Illuminate\Http\Request $request) {
+        $user = $request->user();
+        if (! $user->isStudent()) {
+            return response()->json(['feed' => []]);
+        }
+
+        $courseIds = \App\Models\Enrollment::where('user_id', $user->id)
+            ->where('status', 'active')
+            ->pluck('course_id');
+
+        $courses = \App\Models\Course::whereIn('id', $courseIds)
+            ->pluck('name', 'id');
+
+        $feed = collect();
+
+        // Announcements
+        \App\Models\Announcement::whereIn('course_id', $courseIds)
+            ->orderBy('created_at', 'desc')->take(20)->get()
+            ->each(fn($a) => $feed->push([
+                'type'       => 'announcement',
+                'title'      => $a->title,
+                'body'       => $a->content,
+                'course'     => $courses[$a->course_id] ?? '',
+                'course_id'  => $a->course_id,
+                'created_at' => $a->created_at,
+            ]));
+
+        // New assessments
+        \App\Models\Assessment::whereIn('course_id', $courseIds)
+            ->where('is_published', true)
+            ->orderBy('created_at', 'desc')->take(20)->get()
+            ->each(fn($a) => $feed->push([
+                'type'       => 'assessment',
+                'title'      => $a->title,
+                'body'       => ucfirst(str_replace('_', ' ', $a->type)) . ' · ' . $a->total_points . ' pts',
+                'course'     => $courses[$a->course_id] ?? '',
+                'course_id'  => $a->course_id,
+                'item_id'    => $a->id,
+                'created_at' => $a->created_at,
+            ]));
+
+        // New lesson materials
+        \App\Models\LessonMaterial::whereHas('lesson', fn($q) => $q->whereIn('course_id', $courseIds)->where('is_published', true))
+            ->with('lesson:id,title,course_id')
+            ->orderBy('created_at', 'desc')->take(20)->get()
+            ->each(fn($m) => $feed->push([
+                'type'       => 'material',
+                'title'      => $m->title,
+                'body'       => strtoupper($m->type) . ' uploaded to ' . ($m->lesson->title ?? ''),
+                'course'     => $courses[$m->lesson->course_id ?? 0] ?? '',
+                'course_id'  => $m->lesson->course_id ?? null,
+                'lesson_id'  => $m->lesson_id,
+                'created_at' => $m->created_at,
+            ]));
+
+        $sorted = $feed->sortByDesc('created_at')->values()->take(30);
+
+        return response()->json(['feed' => $sorted]);
+    });
+
     // --- ADMIN USER MANAGEMENT ---
     Route::get('/admin/users', [AdminController::class, 'listUsers']);
     Route::post('/admin/users', [AdminController::class, 'createUser']);

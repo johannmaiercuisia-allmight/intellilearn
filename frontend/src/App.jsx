@@ -12,12 +12,14 @@ import StudentDashboard from './pages/student/StudentDashboard';
 import StudentCoursePage from './pages/student/StudentCoursePage';
 import StudentQuizPage from './pages/student/StudentQuizPage';
 import StudentLessonPage from './pages/student/StudentLessonPage';
+import StudentMaterialViewerPage from './pages/student/StudentMaterialViewerPage';
 import StudentProfilePage from './pages/student/StudentProfilePage';
 import StudentCalendarPage from './pages/student/StudentCalendarPage';
 
 // Instructor
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import InstructorCoursePage from './pages/instructor/InstructorCoursePage';
+import InstructorAssessmentPage from './pages/instructor/InstructorAssessmentPage';
 import InstructorStudentsPage from './pages/instructor/InstructorStudentsPage';
 import InstructorGradePage from './pages/instructor/InstructorGradePage';
 
@@ -54,6 +56,7 @@ export default function App() {
           <Route path="/student/courses" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentDashboard /></DashboardLayout></ProtectedRoute>} />
           <Route path="/student/courses/:courseId" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentCoursePage /></DashboardLayout></ProtectedRoute>} />
           <Route path="/student/courses/:courseId/lessons/:lessonId" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentLessonPage /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/student/courses/:courseId/lessons/:lessonId/materials/:materialId" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentMaterialViewerPage /></DashboardLayout></ProtectedRoute>} />
           <Route path="/student/courses/:courseId/assessments/:assessmentId" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentQuizPage /></DashboardLayout></ProtectedRoute>} />
           <Route path="/student/calendar" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentCalendarPage /></DashboardLayout></ProtectedRoute>} />
           <Route path="/student/profile" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentProfilePage /></DashboardLayout></ProtectedRoute>} />
@@ -62,6 +65,7 @@ export default function App() {
           <Route path="/instructor" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><InstructorDashboard /></DashboardLayout></ProtectedRoute>} />
           <Route path="/instructor/courses" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><InstructorDashboard /></DashboardLayout></ProtectedRoute>} />
           <Route path="/instructor/courses/:courseId" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><InstructorCoursePage /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/instructor/courses/:courseId/assessments/:assessmentId" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><InstructorAssessmentPage /></DashboardLayout></ProtectedRoute>} />
           <Route path="/instructor/students" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><InstructorStudentsPage /></DashboardLayout></ProtectedRoute>} />
           <Route path="/instructor/grading" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><InstructorGradePage /></DashboardLayout></ProtectedRoute>} />
           <Route path="/instructor/profile" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><StudentProfilePage /></DashboardLayout></ProtectedRoute>} />

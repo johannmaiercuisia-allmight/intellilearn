@@ -111,36 +111,20 @@ export default function StudentLessonPage() {
         ) : (
           <div className="space-y-3">
             {lesson.materials.map((material) => (
-              <div
-                key={material.id}
-                className="bg-white rounded-xl border border-slate-200 p-5 flex items-center justify-between"
-              >
+              <div key={material.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {getMaterialIcon(material.type)}
+                  <span className="text-2xl">{material.type === 'pdf' ? '📄' : material.type === 'docx' ? '📝' : material.type === 'link' ? '🔗' : '📎'}</span>
                   <div>
                     <h4 className="font-medium text-slate-800 text-sm">{material.title}</h4>
-                    <p className="text-xs text-slate-400 capitalize mt-0.5">{material.type}</p>
+                    <p className="text-xs text-slate-400 uppercase mt-0.5">{material.type}</p>
                   </div>
                 </div>
-                {material.url ? (
-                  <a
-                    href={material.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-                  >
-                    Open →
-                  </a>
-                ) : material.file_path ? (
-                  <a
-                    href={`http://127.0.0.1:8000/storage/${material.file_path}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-                  >
-                    Download →
-                  </a>
-                ) : null}
+                <button
+                  onClick={() => navigate(`/student/courses/${courseId}/lessons/${lessonId}/materials/${material.id}`, { state: { material } })}
+                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium px-3 py-1.5 bg-indigo-50 rounded-lg transition-colors"
+                >
+                  View →
+                </button>
               </div>
             ))}
           </div>

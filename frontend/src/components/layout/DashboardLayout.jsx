@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
 import MenuIcon from '@mui/icons-material/Menu';
-import SearchIcon from '@mui/icons-material/Search';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -35,11 +35,82 @@ const navItems = {
   ],
 };
 
+const typeIcon = { announcement: '📢', assessment: '📝', material: '📎' };
+const typeColor = { announcement: 'text-amber-600 bg-amber-50', assessment: 'text-indigo-600 bg-indigo-50', material: 'text-teal-600 bg-teal-50' };
+
+function NotificationPanel({ onClose }) {
+  const [feed, setFeed] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const panelRef = useRef(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    api.get('/student/feed')
+      .then(res => setFeed(res.data.feed || []))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => { if (panelRef.current && !panelRef.current.contains(e.target)) onClose(); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  const handleClick = (item) => {
+    onClose();
+    if (item.type === 'assessment' && item.course_id && item.item_id) {
+      navigate(`/student/courses/${item.course_id}/assessments/${item.item_id}`);
+    } else if (item.course_id) {
+      navigate(`/student/courses/${item.course_id}`);
+    }
+  };
+
+  return (
+    <div ref={panelRef} className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+        <span className="font-semibold text-slate-800 text-sm">Notifications</span>
+        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
+      </div>
+      <div className="overflow-y-auto" style={{ maxHeight: '420px' }}>
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+          </div>
+        ) : feed.length === 0 ? (
+          <p className="text-slate-500 text-sm text-center py-10">No recent activity.</p>
+        ) : (
+          feed.map((item, idx) => (
+            <button key={idx} onClick={() => handleClick(item)}
+              className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+              <div className="flex items-start gap-3">
+                <span className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 mt-0.5 ${typeColor[item.type]}`}>
+                  {typeIcon[item.type]} {item.type}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-slate-800 truncate">{item.title}</p>
+                  <p className="text-xs text-slate-500 mt-0.5 truncate">{item.body}</p>
+                  <p className="text-xs text-indigo-500 mt-0.5 truncate">{item.course}</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {new Date(item.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardLayout({ children }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const items = navItems[user?.role] || [];
 
@@ -50,15 +121,12 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className="dashboard-shell">
-      {sidebarOpen && (
-        <div className="overlay" onClick={() => setSidebarOpen(false)} />
-      )}
+      {sidebarOpen && <div className="overlay" onClick={() => setSidebarOpen(false)} />}
 
       <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-logo">
           <span className="dot">IL</span> Intellilearn
         </div>
-
         <div className="sidebar-profile">
           <div className="avatar">{user?.first_name?.[0]}{user?.last_name?.[0]}</div>
           <div>
@@ -66,19 +134,15 @@ export default function DashboardLayout({ children }) {
             <div className="sidebar-profile-role">{user?.role}</div>
           </div>
         </div>
-
         <div className="sidebar-nav">
-          {items.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link key={item.path} to={item.path} onClick={() => setSidebarOpen(false)} className={`nav-item ${isActive ? 'active' : ''}`}>
-                <span className="nav-icon">{item.icon}</span>
-                {item.label}
-              </Link>
-            );
-          })}
+          {items.map((item) => (
+            <Link key={item.path} to={item.path} onClick={() => setSidebarOpen(false)}
+              className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}>
+              <span className="nav-icon">{item.icon}</span>
+              {item.label}
+            </Link>
+          ))}
         </div>
-
         <button className="logout-btn" onClick={handleLogout}>
           <LogoutIcon fontSize="small" /> Log out
         </button>
@@ -91,15 +155,27 @@ export default function DashboardLayout({ children }) {
 
           <div className="topbar-search">
             <input type="text" placeholder="Search courses..." />
-            <SearchIcon fontSize="small" />
           </div>
 
-          <button className="topbar-icon-btn" title="Notifications"><NotificationsIcon fontSize="small" /></button>
+          {/* Notification bell — students only */}
+          {user?.role === 'student' && (
+            <div className="relative">
+              <button
+                className="topbar-icon-btn"
+                title="Notifications"
+                onClick={() => setNotifOpen((v) => !v)}
+              >
+                <NotificationsIcon fontSize="small" />
+              </button>
+              {notifOpen && <NotificationPanel onClose={() => setNotifOpen(false)} />}
+            </div>
+          )}
+
           <div className="topbar-user">
             <div className="avatar">{user?.first_name?.[0]}{user?.last_name?.[0]}</div>
             <div>
               <div className="topbar-user-name">{user?.first_name} {user?.last_name}</div>
-              <div className="topbar-user-id">{user?.email || 'student@ecoursie.com'}</div>
+              <div className="topbar-user-id">{user?.email}</div>
             </div>
           </div>
         </header>
