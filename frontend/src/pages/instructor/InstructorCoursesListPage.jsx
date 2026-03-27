@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import ScienceIcon from '@mui/icons-material/Science';
@@ -17,8 +16,7 @@ const courseColors = [
   { bg: '#A7F3D0', icon: <CalculateIcon  fontSize="medium" sx={{ color: '#065F46' }} /> },
 ];
 
-export default function InstructorDashboard() {
-  const { user } = useAuth();
+export default function InstructorCoursesListPage() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -37,59 +35,21 @@ export default function InstructorDashboard() {
     );
   }
 
-  const totalStudents = courses.reduce((sum, c) => sum + (c.students_count || 0), 0);
-
   return (
     <div className="page-content">
       <div className="dashboard-main">
 
-        {/* Greeting */}
+        {/* Page heading */}
         <header className="dashboard-title-row">
-          <div>
-            <h1>Welcome back, {user?.first_name || 'Instructor'}!</h1>
-            <p className="dashboard-subtitle">Here's an overview of your classes.</p>
-          </div>
+          <h1>My Courses</h1>
         </header>
 
-        {/* Stat cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '32px' }}>
-          <div className="stat-card">
-            <div className="stat-label">My Courses</div>
-            <div className="stat-value">{courses.length}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">Total Students</div>
-            <div className="stat-value">{totalStudents}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">Pending Grading</div>
-            <div className="stat-value">—</div>
-          </div>
-        </div>
-
-        {/* Section header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <h2 style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: '1.1rem', fontWeight: 700,
-            color: 'var(--text-dark)', margin: 0,
-          }}>
-            Your Courses
-          </h2>
-          <Link to="/instructor/courses" style={{
-            fontSize: '0.8rem', color: '#059669',
-            fontWeight: 600, textDecoration: 'none',
-          }}>
-            View all →
-          </Link>
-        </div>
-
-        {/* Course cards — max 3 on dashboard */}
+        {/* Full course list */}
         <div className="courses-list">
           {courses.length === 0 ? (
             <div className="empty-card">No courses assigned yet.</div>
           ) : (
-            courses.slice(0, 3).map((course, idx) => {
+            courses.map((course, idx) => {
               const theme = courseColors[idx % courseColors.length];
               return (
                 <Link
@@ -115,17 +75,6 @@ export default function InstructorDashboard() {
             })
           )}
         </div>
-
-        {/* View all nudge if more than 3 */}
-        {courses.length > 3 && (
-          <Link to="/instructor/courses" style={{
-            display: 'block', textAlign: 'center',
-            marginTop: '12px', fontSize: '0.85rem',
-            color: '#059669', fontWeight: 600, textDecoration: 'none',
-          }}>
-            + {courses.length - 3} more course{courses.length - 3 !== 1 ? 's' : ''} — View all
-          </Link>
-        )}
       </div>
     </div>
   );

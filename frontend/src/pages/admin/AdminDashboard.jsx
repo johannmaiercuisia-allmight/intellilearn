@@ -16,9 +16,11 @@ export default function AdminDashboard() {
   }, []);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-    </div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
+      </div>
+    );
   }
 
   return (
@@ -42,13 +44,13 @@ export default function AdminDashboard() {
           </div>
           <div className="stat-card">
             <div className="stat-label">Active Courses</div>
-            <div className="stat-value" style={{ color: 'var(--purple-primary)' }}>
+            <div className="stat-value">
               {courses.filter((c) => c.status === 'active').length}
             </div>
           </div>
         </div>
 
-        <div className="card">
+        <div className="card" style={{ marginTop: '20px' }}>
           <div style={{ marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border)' }}>
             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-dark)', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>All Courses</h3>
           </div>
@@ -73,7 +75,7 @@ export default function AdminDashboard() {
                   </td>
                   <td style={{ padding: '12px 0', color: 'var(--text-body)' }}>{course.students_count || 0}</td>
                   <td style={{ padding: '12px 0' }}>
-                    <span className="badge" style={{ 
+                    <span className="badge" style={{
                       background: course.status === 'active' ? '#D1FADF' : '#F3F4F6',
                       color: course.status === 'active' ? '#047857' : '#6B7280'
                     }}>

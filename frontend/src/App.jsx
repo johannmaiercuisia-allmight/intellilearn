@@ -9,6 +9,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 
 // Student
 import StudentDashboard from './pages/student/StudentDashboard';
+import StudentCoursesListPage from './pages/student/StudentCoursesListPage';
 import StudentCoursePage from './pages/student/StudentCoursePage';
 import StudentQuizPage from './pages/student/StudentQuizPage';
 import StudentLessonPage from './pages/student/StudentLessonPage';
@@ -18,6 +19,7 @@ import StudentCalendarPage from './pages/student/StudentCalendarPage';
 
 // Instructor
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
+import InstructorCoursesListPage from './pages/instructor/InstructorCoursesListPage';
 import InstructorCoursePage from './pages/instructor/InstructorCoursePage';
 import InstructorAssessmentPage from './pages/instructor/InstructorAssessmentPage';
 import InstructorStudentsPage from './pages/instructor/InstructorStudentsPage';
@@ -51,31 +53,112 @@ export default function App() {
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           <Route path="/" element={<RoleRedirect />} />
 
-          {/* Student */}
-          <Route path="/student" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentDashboard /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/student/courses" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentDashboard /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/student/courses/:courseId" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentCoursePage /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/student/courses/:courseId/lessons/:lessonId" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentLessonPage /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/student/courses/:courseId/lessons/:lessonId/materials/:materialId" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentMaterialViewerPage /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/student/courses/:courseId/assessments/:assessmentId" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentQuizPage /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/student/calendar" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentCalendarPage /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/student/profile" element={<ProtectedRoute roles={['student']}><DashboardLayout><StudentProfilePage /></DashboardLayout></ProtectedRoute>} />
+          {/* ── Student ── */}
+          <Route path="/student" element={
+            <ProtectedRoute roles={['student']}>
+              <DashboardLayout><StudentDashboard /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/student/courses" element={
+            <ProtectedRoute roles={['student']}>
+              <DashboardLayout><StudentCoursesListPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/student/courses/:courseId" element={
+            <ProtectedRoute roles={['student']}>
+              <DashboardLayout><StudentCoursePage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/student/courses/:courseId/lessons/:lessonId" element={
+            <ProtectedRoute roles={['student']}>
+              <DashboardLayout><StudentLessonPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/student/courses/:courseId/lessons/:lessonId/materials/:materialId" element={
+            <ProtectedRoute roles={['student']}>
+              <DashboardLayout><StudentMaterialViewerPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/student/courses/:courseId/assessments/:assessmentId" element={
+            <ProtectedRoute roles={['student']}>
+              <DashboardLayout><StudentQuizPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/student/calendar" element={
+            <ProtectedRoute roles={['student']}>
+              <DashboardLayout><StudentCalendarPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/student/profile" element={
+            <ProtectedRoute roles={['student']}>
+              <DashboardLayout><StudentProfilePage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
 
-          {/* Instructor */}
-          <Route path="/instructor" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><InstructorDashboard /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/instructor/courses" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><InstructorDashboard /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/instructor/courses/:courseId" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><InstructorCoursePage /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/instructor/courses/:courseId/assessments/:assessmentId" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><InstructorAssessmentPage /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/instructor/students" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><InstructorStudentsPage /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/instructor/grading" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><InstructorGradePage /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/instructor/profile" element={<ProtectedRoute roles={['instructor']}><DashboardLayout><StudentProfilePage /></DashboardLayout></ProtectedRoute>} />
+          {/* ── Instructor ── */}
+          <Route path="/instructor" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorDashboard /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          {/* FIX: /instructor/courses now shows the full list, not the dashboard */}
+          <Route path="/instructor/courses" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorCoursesListPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/instructor/courses/:courseId" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorCoursePage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/instructor/courses/:courseId/assessments/:assessmentId" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorAssessmentPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/instructor/students" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorStudentsPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/instructor/grading" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorGradePage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/instructor/profile" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><StudentProfilePage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
 
-          {/* Admin */}
-          <Route path="/admin" element={<ProtectedRoute roles={['admin']}><DashboardLayout><AdminDashboard /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><DashboardLayout><AdminUsersPage /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/admin/courses" element={<ProtectedRoute roles={['admin']}><DashboardLayout><AdminDashboard /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/admin/courses/create" element={<ProtectedRoute roles={['admin']}><DashboardLayout><AdminCreateCoursePage /></DashboardLayout></ProtectedRoute>} />
-          <Route path="/admin/reports" element={<ProtectedRoute roles={['admin']}><DashboardLayout><PlaceholderPage title="Reports" /></DashboardLayout></ProtectedRoute>} />
+          {/* ── Admin ── */}
+          <Route path="/admin" element={
+            <ProtectedRoute roles={['admin']}>
+              <DashboardLayout><AdminDashboard /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users" element={
+            <ProtectedRoute roles={['admin']}>
+              <DashboardLayout><AdminUsersPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/courses" element={
+            <ProtectedRoute roles={['admin']}>
+              <DashboardLayout><AdminDashboard /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/courses/create" element={
+            <ProtectedRoute roles={['admin']}>
+              <DashboardLayout><AdminCreateCoursePage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/reports" element={
+            <ProtectedRoute roles={['admin']}>
+              <DashboardLayout><PlaceholderPage title="Reports" /></DashboardLayout>
+            </ProtectedRoute>
+          } />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

@@ -12,6 +12,12 @@ import PersonIcon from '@mui/icons-material/Person';
 import GroupIcon from '@mui/icons-material/Group';
 import SchoolIcon from '@mui/icons-material/School';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import SearchIcon from '@mui/icons-material/Search';
+import ComputerIcon from '@mui/icons-material/Computer';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import EngineeringIcon from '@mui/icons-material/Engineering';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import ScienceIcon from '@mui/icons-material/Science';
 
 const navItems = {
   student: [
@@ -35,9 +41,22 @@ const navItems = {
   ],
 };
 
-const typeIcon = { announcement: '📢', assessment: '📝', material: '📎' };
-const typeColor = { announcement: 'text-amber-600 bg-amber-50', assessment: 'text-indigo-600 bg-indigo-50', material: 'text-teal-600 bg-teal-50' };
+const courseColors = [
+  { bg: '#EEF3FF', icon: <ComputerIcon fontSize="medium" sx={{ color: '#4c6ef5' }} /> },
+  { bg: '#FFF0F9', icon: <SmartToyIcon fontSize="medium" sx={{ color: '#C026D3' }} /> },
+  { bg: '#FFF7ED', icon: <EngineeringIcon fontSize="medium" sx={{ color: '#EA580C' }} /> },
+  { bg: '#F0FDF4', icon: <AutoStoriesIcon fontSize="medium" sx={{ color: '#16A34A' }} /> },
+  { bg: '#EFF6FF', icon: <ScienceIcon fontSize="medium" sx={{ color: '#2563EB' }} /> },
+];
 
+const typeIcon = { announcement: '📢', assessment: '📝', material: '📎' };
+const typeColor = {
+  announcement: 'text-amber-600 bg-amber-50',
+  assessment: 'text-indigo-600 bg-indigo-50',
+  material: 'text-teal-600 bg-teal-50',
+};
+
+/* ── Notification Panel ── */
 function NotificationPanel({ onClose }) {
   const [feed, setFeed] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,9 +70,10 @@ function NotificationPanel({ onClose }) {
       .finally(() => setLoading(false));
   }, []);
 
-  // Close on outside click
   useEffect(() => {
-    const handler = (e) => { if (panelRef.current && !panelRef.current.contains(e.target)) onClose(); };
+    const handler = (e) => {
+      if (panelRef.current && !panelRef.current.contains(e.target)) onClose();
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
@@ -68,7 +88,10 @@ function NotificationPanel({ onClose }) {
   };
 
   return (
-    <div ref={panelRef} className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+    <div
+      ref={panelRef}
+      className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden"
+    >
       <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
         <span className="font-semibold text-slate-800 text-sm">Notifications</span>
         <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
@@ -82,8 +105,11 @@ function NotificationPanel({ onClose }) {
           <p className="text-slate-500 text-sm text-center py-10">No recent activity.</p>
         ) : (
           feed.map((item, idx) => (
-            <button key={idx} onClick={() => handleClick(item)}
-              className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+            <button
+              key={idx}
+              onClick={() => handleClick(item)}
+              className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0"
+            >
               <div className="flex items-start gap-3">
                 <span className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 mt-0.5 ${typeColor[item.type]}`}>
                   {typeIcon[item.type]} {item.type}
@@ -93,7 +119,9 @@ function NotificationPanel({ onClose }) {
                   <p className="text-xs text-slate-500 mt-0.5 truncate">{item.body}</p>
                   <p className="text-xs text-indigo-500 mt-0.5 truncate">{item.course}</p>
                   <p className="text-xs text-slate-400 mt-1">
-                    {new Date(item.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    {new Date(item.created_at).toLocaleDateString('en-PH', {
+                      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                    })}
                   </p>
                 </div>
               </div>
@@ -105,18 +133,112 @@ function NotificationPanel({ onClose }) {
   );
 }
 
+/* ── Course Search Dropdown ── */
+function CourseSearchDropdown({ query, courses, onSelect, onClose }) {
+  const dropdownRef = useRef(null);
+
+  // Close when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) onClose();
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  const filtered = courses.filter((c) => {
+    const q = query.toLowerCase();
+    return (
+      c.name?.toLowerCase().includes(q) ||
+      c.code?.toLowerCase().includes(q) ||
+      c.description?.toLowerCase().includes(q) ||
+      `${c.instructor?.first_name} ${c.instructor?.last_name}`.toLowerCase().includes(q)
+    );
+  });
+
+  if (!query.trim()) return null;
+
+  return (
+    <div ref={dropdownRef} className="search-dropdown">
+      {filtered.length === 0 ? (
+        <div className="search-dropdown-empty">No courses match "{query}"</div>
+      ) : (
+        filtered.map((course, idx) => {
+          const theme = courseColors[idx % courseColors.length];
+          return (
+            <button
+              key={course.id}
+              className="search-dropdown-item"
+              onClick={() => onSelect(course)}
+            >
+              <div className="search-dropdown-icon" style={{ background: theme.bg }}>
+                {theme.icon}
+              </div>
+              <div className="search-dropdown-info">
+                <p className="search-dropdown-name">{course.name}</p>
+                <p className="search-dropdown-meta">
+                  {course.code}
+                  {course.instructor && (
+                    <> · {course.instructor.first_name} {course.instructor.last_name}</>
+                  )}
+                </p>
+              </div>
+            </button>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+/* ── Main Layout ── */
 export default function DashboardLayout({ children }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [allCourses, setAllCourses] = useState([]);
+  const searchRef = useRef(null);
+
   const items = navItems[user?.role] || [];
+
+  // Load courses once for search
+  useEffect(() => {
+    api.get('/courses')
+      .then(res => setAllCourses(res.data.courses || []))
+      .catch(console.error);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const handleSearchSelect = (course) => {
+    setSearchQuery('');
+    setSearchOpen(false);
+    // Navigate based on role
+    if (user?.role === 'student') navigate(`/student/courses/${course.id}`);
+    else if (user?.role === 'instructor') navigate(`/instructor/courses/${course.id}`);
+    else navigate(`/admin/courses`);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setSearchOpen(true);
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      setSearchQuery('');
+      setSearchOpen(false);
+    }
   };
 
   return (
@@ -127,6 +249,7 @@ export default function DashboardLayout({ children }) {
         <div className="sidebar-logo">
           <span className="dot">IL</span> Intellilearn
         </div>
+
         <div className="sidebar-profile">
           <div className="avatar">{user?.first_name?.[0]}{user?.last_name?.[0]}</div>
           <div>
@@ -134,27 +257,68 @@ export default function DashboardLayout({ children }) {
             <div className="sidebar-profile-role">{user?.role}</div>
           </div>
         </div>
+
         <div className="sidebar-nav">
           {items.map((item) => (
-            <Link key={item.path} to={item.path} onClick={() => setSidebarOpen(false)}
-              className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}>
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={() => setSidebarOpen(false)}
+              className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+            >
               <span className="nav-icon">{item.icon}</span>
               {item.label}
             </Link>
           ))}
         </div>
+
+        {/* ── Logout — visible solid button ── */}
         <button className="logout-btn" onClick={handleLogout}>
-          <LogoutIcon fontSize="small" /> Log out
+          <LogoutIcon fontSize="small" />
+          Log out
         </button>
       </aside>
 
       <div className="main-layout">
         <header className="topbar">
-          <button className="topbar-toggle" onClick={() => setSidebarOpen(true)}><MenuIcon /></button>
-          <div className="topbar-title">{items.find((i) => i.path === location.pathname)?.label || 'Dashboard'}</div>
+          <button className="topbar-toggle" onClick={() => setSidebarOpen(true)}>
+            <MenuIcon />
+          </button>
 
-          <div className="topbar-search">
-            <input type="text" placeholder="Search courses..." />
+          <div className="topbar-title">
+            {items.find((i) => i.path === location.pathname)?.label || 'Dashboard'}
+          </div>
+
+          {/* ── Search bar with live dropdown ── */}
+          <div className="topbar-search" ref={searchRef} style={{ position: 'relative' }}>
+            <SearchIcon
+              fontSize="small"
+              style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#94a3b8',
+                pointerEvents: 'none',
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Search courses..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onFocus={() => setSearchOpen(true)}
+              onKeyDown={handleSearchKeyDown}
+              style={{ paddingLeft: '36px' }}
+            />
+            {searchOpen && searchQuery.trim() && (
+              <CourseSearchDropdown
+                query={searchQuery}
+                courses={allCourses}
+                onSelect={handleSearchSelect}
+                onClose={() => { setSearchOpen(false); setSearchQuery(''); }}
+              />
+            )}
           </div>
 
           {/* Notification bell — students only */}

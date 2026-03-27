@@ -20,6 +20,20 @@ export default function StudentProfilePage() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const isInstructor = user?.role === 'instructor';
+
+  // Role-based color classes
+  const accent      = isInstructor ? 'text-green-700'       : 'text-indigo-600';
+  const accentHover = isInstructor ? 'hover:text-green-800' : 'hover:text-indigo-700';
+  const avatarBg    = isInstructor ? 'bg-green-100'         : 'bg-indigo-100';
+  const avatarText  = isInstructor ? 'text-green-700'       : 'text-indigo-600';
+  const badgeBg     = isInstructor ? 'bg-green-50'          : 'bg-indigo-50';
+  const badgeText   = isInstructor ? 'text-green-700'       : 'text-indigo-600';
+  const btnPrimary  = isInstructor
+    ? 'bg-green-700 hover:bg-green-800 text-white'
+    : 'bg-indigo-600 hover:bg-indigo-700 text-white';
+  const focusRing   = isInstructor ? 'focus:ring-green-500' : 'focus:ring-indigo-500';
+
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -29,7 +43,6 @@ export default function StudentProfilePage() {
       const res = await api.put('/profile', form);
       setMessage('Profile updated successfully.');
       setEditing(false);
-      // Update local storage
       const updatedUser = { ...user, ...res.data.user };
       localStorage.setItem('user', JSON.stringify(updatedUser));
     } catch (err) {
@@ -68,15 +81,15 @@ export default function StudentProfilePage() {
       {/* Profile header */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-            <span className="text-2xl font-bold text-indigo-600">
+          <div className={`w-16 h-16 ${avatarBg} rounded-full flex items-center justify-center`}>
+            <span className={`text-2xl font-bold ${avatarText}`}>
               {user?.first_name?.[0]}{user?.last_name?.[0]}
             </span>
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-800">{user?.first_name} {user?.last_name}</h2>
             <p className="text-sm text-slate-500">{user?.email}</p>
-            <span className="inline-block mt-1 text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full capitalize">
+            <span className={`inline-block mt-1 text-xs ${badgeBg} ${badgeText} px-2.5 py-1 rounded-full capitalize`}>
               {user?.role}
             </span>
           </div>
@@ -95,7 +108,12 @@ export default function StudentProfilePage() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-800">Personal Information</h3>
           {!editing && (
-            <button onClick={() => setEditing(true)} className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">Edit</button>
+            <button
+              onClick={() => setEditing(true)}
+              className={`text-sm ${accent} ${accentHover} font-medium`}
+            >
+              Edit
+            </button>
           )}
         </div>
 
@@ -104,27 +122,47 @@ export default function StudentProfilePage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">First name</label>
-                <input type="text" value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+                <input
+                  type="text"
+                  value={form.first_name}
+                  onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                  className={`w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 ${focusRing} focus:border-transparent`}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Last name</label>
-                <input type="text" value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+                <input
+                  type="text"
+                  value={form.last_name}
+                  onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                  className={`w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 ${focusRing} focus:border-transparent`}
+                />
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
-              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className={`w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 ${focusRing} focus:border-transparent`}
+              />
             </div>
             <div className="flex gap-3">
-              <button type="submit" disabled={saving}
-                className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+              <button
+                type="submit"
+                disabled={saving}
+                className={`${btnPrimary} px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors`}
+              >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
-              <button type="button" onClick={() => setEditing(false)}
-                className="bg-slate-100 text-slate-700 px-5 py-2 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors">Cancel</button>
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="bg-slate-100 text-slate-700 px-5 py-2 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           </form>
         ) : (
@@ -155,8 +193,10 @@ export default function StudentProfilePage() {
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-800">Security</h3>
-          <button onClick={() => setShowPasswordForm(!showPasswordForm)}
-            className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+          <button
+            onClick={() => setShowPasswordForm(!showPasswordForm)}
+            className={`text-sm ${accent} ${accentHover} font-medium`}
+          >
             {showPasswordForm ? 'Cancel' : 'Change Password'}
           </button>
         </div>
@@ -165,24 +205,40 @@ export default function StudentProfilePage() {
           <form onSubmit={handlePasswordChange} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Current password</label>
-              <input type="password" value={passwordForm.current_password}
+              <input
+                type="password"
+                value={passwordForm.current_password}
                 onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" required />
+                className={`w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 ${focusRing} focus:border-transparent`}
+                required
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">New password</label>
-              <input type="password" value={passwordForm.password}
+              <input
+                type="password"
+                value={passwordForm.password}
                 onChange={(e) => setPasswordForm({ ...passwordForm, password: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Minimum 8 characters" required />
+                className={`w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 ${focusRing} focus:border-transparent`}
+                placeholder="Minimum 8 characters"
+                required
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Confirm new password</label>
-              <input type="password" value={passwordForm.password_confirmation}
+              <input
+                type="password"
+                value={passwordForm.password_confirmation}
                 onChange={(e) => setPasswordForm({ ...passwordForm, password_confirmation: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" required />
+                className={`w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 ${focusRing} focus:border-transparent`}
+                required
+              />
             </div>
-            <button type="submit" disabled={saving}
-              className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+            <button
+              type="submit"
+              disabled={saving}
+              className={`${btnPrimary} px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors`}
+            >
               {saving ? 'Updating...' : 'Update Password'}
             </button>
           </form>
@@ -195,8 +251,10 @@ export default function StudentProfilePage() {
       <div className="bg-white rounded-xl border border-red-200 p-6">
         <h3 className="text-lg font-semibold text-red-700 mb-2">Danger Zone</h3>
         <p className="text-sm text-slate-500 mb-4">Logging out will end your current session.</p>
-        <button onClick={logout}
-          className="bg-red-50 text-red-600 px-5 py-2 rounded-lg text-sm font-medium hover:bg-red-100 border border-red-200 transition-colors">
+        <button
+          onClick={logout}
+          className="bg-red-50 text-red-600 px-5 py-2 rounded-lg text-sm font-medium hover:bg-red-100 border border-red-200 transition-colors"
+        >
           Log out
         </button>
       </div>
