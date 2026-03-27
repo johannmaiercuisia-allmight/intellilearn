@@ -143,15 +143,15 @@ This will start:
 If you ran the database seeder, you can use these accounts:
 
 **Admin:**
-- Email: `admin@intellilearn.com`
+- Email: `admin@demo.com`
 - Password: `password`
 
 **Instructor:**
-- Email: `instructor@intellilearn.com`
+- Email: `instructor@demo.com`
 - Password: `password`
 
 **Student:**
-- Email: `student@intellilearn.com`
+- Email: `student1@demo.com`
 - Password: `password`
 
 ---
