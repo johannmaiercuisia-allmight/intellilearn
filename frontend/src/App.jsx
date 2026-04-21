@@ -24,6 +24,7 @@ import InstructorCoursePage from './pages/instructor/InstructorCoursePage';
 import InstructorAssessmentPage from './pages/instructor/InstructorAssessmentPage';
 import InstructorStudentsPage from './pages/instructor/InstructorStudentsPage';
 import InstructorGradePage from './pages/instructor/InstructorGradePage';
+import InstructorCreateCoursePage from './pages/instructor/InstructorCreateCoursePage';
 
 // Admin
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -105,6 +106,11 @@ export default function App() {
           <Route path="/instructor/courses" element={
             <ProtectedRoute roles={['instructor']}>
               <DashboardLayout><InstructorCoursesListPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/instructor/courses/create" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorCreateCoursePage /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="/instructor/courses/:courseId" element={

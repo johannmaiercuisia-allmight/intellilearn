@@ -47,12 +47,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- COURSES ---
     Route::get('/courses', [CourseController::class, 'index']);
     Route::post('/courses', [CourseController::class, 'store']);
+    Route::post('/courses/join', [CourseController::class, 'joinByCode']);
     Route::get('/courses/{course}', [CourseController::class, 'show']);
     Route::put('/courses/{course}', [CourseController::class, 'update']);
     Route::delete('/courses/{course}', [CourseController::class, 'destroy']);
     Route::post('/courses/{course}/enroll', [CourseController::class, 'enroll']);
     Route::post('/courses/{course}/unenroll', [CourseController::class, 'unenroll']);
     Route::get('/courses/{course}/students', [CourseController::class, 'students']);
+    Route::post('/courses/{course}/generate-code', [CourseController::class, 'generateCode']);
+    Route::delete('/courses/{course}/join-code', [CourseController::class, 'revokeCode']);
 
     // --- LESSONS ---
     Route::get('/courses/{course}/lessons', [LessonController::class, 'index']);

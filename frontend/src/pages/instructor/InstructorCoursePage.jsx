@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import PushPinIcon from '@mui/icons-material/PushPin';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 export default function InstructorCoursePage() {
   const { courseId } = useParams();
@@ -20,6 +21,10 @@ export default function InstructorCoursePage() {
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
   const [showEventForm, setShowEventForm] = useState(false);
   const [showMaterialForm, setShowMaterialForm] = useState(null); // lessonId
+
+  // Join code state
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   const fetchData = () => {
     Promise.all([
@@ -60,6 +65,37 @@ export default function InstructorCoursePage() {
     } catch (err) {
       alert('Failed to delete.');
     }
+  };
+
+  const handleGenerateCode = async () => {
+    setCodeLoading(true);
+    try {
+      const res = await api.post(`/courses/${courseId}/generate-code`);
+      setCourse((prev) => ({ ...prev, join_code: res.data.join_code }));
+    } catch (err) {
+      alert('Failed to generate code.');
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
+  const handleRevokeCode = async () => {
+    if (!confirm('Revoke this join code? Students will no longer be able to use it.')) return;
+    setCodeLoading(true);
+    try {
+      await api.delete(`/courses/${courseId}/join-code`);
+      setCourse((prev) => ({ ...prev, join_code: null }));
+    } catch (err) {
+      alert('Failed to revoke code.');
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(course.join_code);
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 2000);
   };
 
   return (
@@ -242,33 +278,80 @@ export default function InstructorCoursePage() {
 
       {/* Students tab */}
       {tab === 'students' && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          {students.length === 0 ? (
-            <p className="text-slate-500 p-6 text-center">No students enrolled yet.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="text-left px-5 py-3 font-medium text-slate-600">#</th>
-                  <th className="text-left px-5 py-3 font-medium text-slate-600">Name</th>
-                  <th className="text-left px-5 py-3 font-medium text-slate-600">Email</th>
-                  <th className="text-left px-5 py-3 font-medium text-slate-600">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {students.map((student, idx) => (
-                  <tr key={student.id} className="hover:bg-slate-50">
-                    <td className="px-5 py-3 text-slate-400">{idx + 1}</td>
-                    <td className="px-5 py-3 font-medium text-slate-800">{student.first_name} {student.last_name}</td>
-                    <td className="px-5 py-3 text-slate-600">{student.email}</td>
-                    <td className="px-5 py-3">
-                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full capitalize">{student.pivot?.status || 'active'}</span>
-                    </td>
+        <div className="space-y-4">
+          {/* Enrollment Code Panel */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <h4 className="font-semibold text-slate-800 mb-1">Class Join Code</h4>
+            <p className="text-sm text-slate-500 mb-4">
+              Share this code with students so they can join the course directly.
+            </p>
+            {course.join_code ? (
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-mono text-2xl font-bold tracking-widest text-teal-700 bg-teal-50 px-5 py-2 rounded-lg border border-teal-200">
+                  {course.join_code}
+                </span>
+                <button
+                  onClick={handleCopyCode}
+                  className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-teal-700 border border-slate-300 px-3 py-2 rounded-lg hover:border-teal-400 transition-colors"
+                >
+                  <ContentCopyIcon sx={{ fontSize: 16 }} />
+                  {codeCopied ? 'Copied!' : 'Copy'}
+                </button>
+                <button
+                  onClick={handleGenerateCode}
+                  disabled={codeLoading}
+                  className="text-sm text-slate-600 hover:text-teal-700 border border-slate-300 px-3 py-2 rounded-lg hover:border-teal-400 transition-colors disabled:opacity-50"
+                >
+                  Regenerate
+                </button>
+                <button
+                  onClick={handleRevokeCode}
+                  disabled={codeLoading}
+                  className="text-sm text-red-500 hover:text-red-700 border border-red-200 px-3 py-2 rounded-lg hover:border-red-400 transition-colors disabled:opacity-50"
+                >
+                  Revoke
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleGenerateCode}
+                disabled={codeLoading}
+                className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
+              >
+                {codeLoading ? 'Generating...' : 'Generate Join Code'}
+              </button>
+            )}
+          </div>
+
+          {/* Students table */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {students.length === 0 ? (
+              <p className="text-slate-500 p-6 text-center">No students enrolled yet.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="text-left px-5 py-3 font-medium text-slate-600">#</th>
+                    <th className="text-left px-5 py-3 font-medium text-slate-600">Name</th>
+                    <th className="text-left px-5 py-3 font-medium text-slate-600">Email</th>
+                    <th className="text-left px-5 py-3 font-medium text-slate-600">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {students.map((student, idx) => (
+                    <tr key={student.id} className="hover:bg-slate-50">
+                      <td className="px-5 py-3 text-slate-400">{idx + 1}</td>
+                      <td className="px-5 py-3 font-medium text-slate-800">{student.first_name} {student.last_name}</td>
+                      <td className="px-5 py-3 text-slate-600">{student.email}</td>
+                      <td className="px-5 py-3">
+                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full capitalize">{student.pivot?.status || 'active'}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       )}
     </div>

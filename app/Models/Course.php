@@ -17,6 +17,7 @@ class Course extends Model
         'semester',
         'section',
         'status',
+        'join_code',
     ];
 
     public function instructor()
