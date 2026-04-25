@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\LessonController;
@@ -168,6 +169,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
         return response()->json(['feed' => $sorted]);
     });
+
+    // --- AI / PREDICTIONS ---
+    Route::post('/ai/predict', [AiController::class, 'predict']);
+    Route::get('/ai/my-risk', [AiController::class, 'myRisk']);
+    Route::get('/ai/courses/{course}/student-risk', [AiController::class, 'courseRisk']);
+    Route::post('/ai/recommend', [AiController::class, 'recommend']);
+    Route::post('/ai/quiz-feedback', [AiController::class, 'quizFeedback']);
+    Route::post('/ai/chatbot', [AiController::class, 'chatbot']);
 
     // --- ADMIN USER MANAGEMENT ---
     Route::get('/admin/users', [AdminController::class, 'listUsers']);

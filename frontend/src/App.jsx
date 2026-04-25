@@ -16,6 +16,7 @@ import StudentLessonPage from './pages/student/StudentLessonPage';
 import StudentMaterialViewerPage from './pages/student/StudentMaterialViewerPage';
 import StudentProfilePage from './pages/student/StudentProfilePage';
 import StudentCalendarPage from './pages/student/StudentCalendarPage';
+import StudentRiskCheckPage from './pages/student/StudentRiskCheckPage';
 
 // Instructor
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
@@ -25,6 +26,7 @@ import InstructorAssessmentPage from './pages/instructor/InstructorAssessmentPag
 import InstructorStudentsPage from './pages/instructor/InstructorStudentsPage';
 import InstructorGradePage from './pages/instructor/InstructorGradePage';
 import InstructorCreateCoursePage from './pages/instructor/InstructorCreateCoursePage';
+import InstructorAiSummaryPage from './pages/instructor/InstructorAiSummaryPage';
 
 // Admin
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -33,6 +35,7 @@ import AdminCreateCoursePage from './pages/admin/AdminCreateCoursePage';
 
 // Utility
 import { PlaceholderPage, UnauthorizedPage } from './pages/PlaceholderPage';
+import AiChatbot from './components/shared/AiChatbot';
 
 function RoleRedirect() {
   const { user, loading } = useAuth();
@@ -57,17 +60,17 @@ export default function App() {
           {/* ── Student ── */}
           <Route path="/student" element={
             <ProtectedRoute roles={['student']}>
-              <DashboardLayout><StudentDashboard /></DashboardLayout>
+              <DashboardLayout><StudentDashboard /><AiChatbot /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="/student/courses" element={
             <ProtectedRoute roles={['student']}>
-              <DashboardLayout><StudentCoursesListPage /></DashboardLayout>
+              <DashboardLayout><StudentCoursesListPage /><AiChatbot /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="/student/courses/:courseId" element={
             <ProtectedRoute roles={['student']}>
-              <DashboardLayout><StudentCoursePage /></DashboardLayout>
+              <DashboardLayout><StudentCoursePage /><AiChatbot /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="/student/courses/:courseId/lessons/:lessonId" element={
@@ -93,6 +96,11 @@ export default function App() {
           <Route path="/student/profile" element={
             <ProtectedRoute roles={['student']}>
               <DashboardLayout><StudentProfilePage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/student/risk-check" element={
+            <ProtectedRoute roles={['student']}>
+              <DashboardLayout><StudentRiskCheckPage /></DashboardLayout>
             </ProtectedRoute>
           } />
 
@@ -131,6 +139,11 @@ export default function App() {
           <Route path="/instructor/grading" element={
             <ProtectedRoute roles={['instructor']}>
               <DashboardLayout><InstructorGradePage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/instructor/courses/:courseId/ai-summary" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorAiSummaryPage /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="/instructor/profile" element={

@@ -97,6 +97,9 @@ export default function StudentQuizPage() {
           )}
         </div>
 
+        {/* AI Feedback Panel */}
+        <AiFeedbackPanel submissionId={result.id} />
+
         {/* Show answers */}
         {result.answers && (
           <div className="space-y-3">
@@ -251,6 +254,55 @@ export default function StudentQuizPage() {
       >
         {submitting ? 'Submitting...' : 'Submit Answers'}
       </button>
+    </div>
+  );
+}
+
+// ── AI Feedback Panel ──────────────────────────────────────────
+function AiFeedbackPanel({ submissionId }) {
+  const [feedback, setFeedback] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.post('/ai/quiz-feedback', { submission_id: submissionId })
+      .then((res) => setFeedback(res.data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [submissionId]);
+
+  if (loading) return (
+    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-sm text-indigo-500 animate-pulse">
+      Generating AI feedback...
+    </div>
+  );
+
+  if (!feedback) return null;
+
+  return (
+    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 space-y-3">
+      <p className="text-sm font-semibold text-indigo-800">🤖 AI Feedback</p>
+      <p className="text-sm text-indigo-700">{feedback.summary}</p>
+
+      {feedback.weak_topics?.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-indigo-600 mb-1">Weak areas:</p>
+          <div className="flex flex-wrap gap-2">
+            {feedback.weak_topics.map((t, i) => (
+              <span key={i} className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{t}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {feedback.suggestions?.length > 0 && (
+        <ul className="space-y-1">
+          {feedback.suggestions.map((s, i) => (
+            <li key={i} className="text-xs text-indigo-600 flex items-start gap-1.5">
+              <span className="mt-0.5">→</span> {s}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

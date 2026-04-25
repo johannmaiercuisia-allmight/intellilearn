@@ -4,7 +4,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "start": "concurrently --names \"LARAVEL,REACT,AI\" --prefix-colors \"green,cyan,magenta\" \"php artisan serve\" \"cd frontend && npm run dev\" \"cd ai-service && venv\\\\Scripts\\\\activate && uvicorn app:app --reload --port 8001\""
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

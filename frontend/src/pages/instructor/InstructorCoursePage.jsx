@@ -172,7 +172,7 @@ export default function InstructorCoursePage() {
                         </div>
                         <div className="flex items-center gap-3">
                           {(m.file_url || m.url) && (
-                            <a href={m.file_url || m.url} target="_blank" rel="noopener noreferrer"
+                            <a href={m.file_url || m.url} rel="noopener noreferrer"
                               className="text-xs text-teal-600 hover:text-teal-800 font-medium">View</a>
                           )}
                           <button onClick={async () => {
@@ -281,7 +281,15 @@ export default function InstructorCoursePage() {
         <div className="space-y-4">
           {/* Enrollment Code Panel */}
           <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h4 className="font-semibold text-slate-800 mb-1">Class Join Code</h4>
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="font-semibold text-slate-800">Class Join Code</h4>
+              <button
+                onClick={() => navigate(`/instructor/courses/${courseId}/ai-summary`)}
+                className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                🤖 AI Student Summary
+              </button>
+            </div>
             <p className="text-sm text-slate-500 mb-4">
               Share this code with students so they can join the course directly.
             </p>
