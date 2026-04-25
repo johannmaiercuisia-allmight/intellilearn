@@ -105,9 +105,9 @@ export default function LoginPage() {
         {['HOME', 'BLOGS', 'ABOUT US', 'ONBOARDING'].map(l => (
           <button key={l} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'0.8rem', fontWeight:600, color:'#64748b', padding:'0 18px', letterSpacing:'0.03em' }}>{l}</button>
         ))}
-        <button onClick={() => { scrollTo(2); setAuthMode(authMode === 'login' ? 'signup' : 'login'); }}
+        <button onClick={() => { scrollTo(2); setAuthMode('login'); }}
           style={{ background:'#1e3a8a', color:'white', border:'none', borderRadius:24, padding:'9px 22px', marginLeft:16, fontSize:'0.8rem', fontWeight:700, cursor:'pointer' }}>
-          {activeSlide === 2 && authMode === 'signup' ? 'LOG IN' : 'SIGN IN'}
+          SIGN IN
         </button>
       </nav>
 
