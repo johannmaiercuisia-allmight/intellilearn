@@ -17,9 +17,12 @@ class LessonMaterial extends Model
         'file_path',
         'url',
         'order',
+        'extracted_text',
     ];
 
     protected $appends = ['file_url'];
+
+    protected $hidden = ['extracted_text'];
 
     public function getFileUrlAttribute(): ?string
     {

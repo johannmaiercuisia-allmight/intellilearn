@@ -177,6 +177,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/ai/recommend', [AiController::class, 'recommend']);
     Route::post('/ai/quiz-feedback', [AiController::class, 'quizFeedback']);
     Route::post('/ai/chatbot', [AiController::class, 'chatbot']);
+    Route::get('/ai/materials/{material}/context', [AiController::class, 'materialContext']);
 
     // --- ADMIN USER MANAGEMENT ---
     Route::get('/admin/users', [AdminController::class, 'listUsers']);

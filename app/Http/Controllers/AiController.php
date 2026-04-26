@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Assessment;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\LessonMaterial;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -230,16 +231,18 @@ class AiController extends Controller
 
     /**
      * POST /api/ai/chatbot
-     * Body: { message, course_name }
+     * Body: { message, course_name, lesson_context, material_title }
      */
     public function chatbot(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'message'     => ['required', 'string', 'max:500'],
-            'course_name' => ['nullable', 'string', 'max:255'],
+            'message'        => ['required', 'string', 'max:500'],
+            'course_name'    => ['nullable', 'string', 'max:255'],
+            'lesson_context' => ['nullable', 'string'],
+            'material_title' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $response = Http::timeout(5)->post("{$this->aiServiceUrl}/chatbot", $validated);
+        $response = Http::timeout(10)->post("{$this->aiServiceUrl}/chatbot", $validated);
 
         if ($response->failed()) {
             return response()->json([
@@ -249,6 +252,20 @@ class AiController extends Controller
         }
 
         return response()->json($response->json());
+    }
+
+    /**
+     * GET /api/ai/materials/{material}/context
+     * Returns extracted text for a material (used by PDF chatbot)
+     */
+    public function materialContext(Request $request, LessonMaterial $material): JsonResponse
+    {
+        return response()->json([
+            'material_id'    => $material->id,
+            'title'          => $material->title,
+            'extracted_text' => $material->extracted_text,
+            'has_text'       => !empty($material->extracted_text),
+        ]);
     }
 
     // ─────────────────────────────────────────────

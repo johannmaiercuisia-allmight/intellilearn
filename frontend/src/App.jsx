@@ -35,7 +35,6 @@ import AdminCreateCoursePage from './pages/admin/AdminCreateCoursePage';
 
 // Utility
 import { PlaceholderPage, UnauthorizedPage } from './pages/PlaceholderPage';
-import AiChatbot from './components/shared/AiChatbot';
 
 function RoleRedirect() {
   const { user, loading } = useAuth();
@@ -60,17 +59,17 @@ export default function App() {
           {/* ── Student ── */}
           <Route path="/student" element={
             <ProtectedRoute roles={['student']}>
-              <DashboardLayout><StudentDashboard /><AiChatbot /></DashboardLayout>
+              <DashboardLayout><StudentDashboard /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="/student/courses" element={
             <ProtectedRoute roles={['student']}>
-              <DashboardLayout><StudentCoursesListPage /><AiChatbot /></DashboardLayout>
+              <DashboardLayout><StudentCoursesListPage /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="/student/courses/:courseId" element={
             <ProtectedRoute roles={['student']}>
-              <DashboardLayout><StudentCoursePage /><AiChatbot /></DashboardLayout>
+              <DashboardLayout><StudentCoursePage /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="/student/courses/:courseId/lessons/:lessonId" element={
