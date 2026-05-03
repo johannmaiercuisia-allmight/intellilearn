@@ -19,6 +19,9 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 // PUBLIC ROUTES
 // =============================================================
 
+// Health check for Railway
+Route::get('/health', fn() => response()->json(['status' => 'ok']));
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);

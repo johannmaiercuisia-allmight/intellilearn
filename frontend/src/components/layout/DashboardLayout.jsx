@@ -201,12 +201,38 @@ export default function DashboardLayout({ children }) {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [allCourses, setAllCourses] = useState([]);
   const searchRef = useRef(null);
+
+  // Load feed and compute unread count vs last seen
+  useEffect(() => {
+    if (user?.role !== 'student') return;
+    api.get('/student/feed')
+      .then(res => {
+        const feed = res.data.feed || [];
+        const lastSeen = parseInt(localStorage.getItem('notif_last_seen_count') || '0', 10);
+        const newCount = Math.max(0, feed.length - lastSeen);
+        setUnreadCount(newCount);
+      })
+      .catch(() => {});
+  }, [user]);
+
+  const handleOpenNotif = () => {
+    setNotifOpen(v => !v);
+    // Mark all as seen — store current total so badge resets
+    api.get('/student/feed')
+      .then(res => {
+        const total = (res.data.feed || []).length;
+        localStorage.setItem('notif_last_seen_count', String(total));
+        setUnreadCount(0);
+      })
+      .catch(() => {});
+  };
 
   const items = navItems[user?.role] || [];
 
@@ -329,9 +355,32 @@ export default function DashboardLayout({ children }) {
               <button
                 className="topbar-icon-btn"
                 title="Notifications"
-                onClick={() => setNotifOpen((v) => !v)}
+                onClick={handleOpenNotif}
               >
                 <NotificationsIcon fontSize="small" />
+                {unreadCount > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: -4, right: -4,
+                    background: '#ef4444',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    borderRadius: '99px',
+                    minWidth: '18px',
+                    height: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 4px',
+                    lineHeight: 1,
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    border: '2px solid white',
+                    pointerEvents: 'none',
+                  }}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
               {notifOpen && <NotificationPanel onClose={() => setNotifOpen(false)} />}
             </div>

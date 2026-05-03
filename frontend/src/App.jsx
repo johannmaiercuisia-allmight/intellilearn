@@ -30,6 +30,8 @@ import InstructorStudentsPage from './pages/instructor/InstructorStudentsPage';
 import InstructorGradePage from './pages/instructor/InstructorGradePage';
 import InstructorCreateCoursePage from './pages/instructor/InstructorCreateCoursePage';
 import InstructorAiSummaryPage from './pages/instructor/InstructorAiSummaryPage';
+import InstructorCreateLessonPage from './pages/instructor/InstructorCreateLessonPage';
+import InstructorCreateAssessmentPage from './pages/instructor/InstructorCreateAssessmentPage';
 
 // Admin
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -149,6 +151,16 @@ export default function App() {
           <Route path="/instructor/courses/:courseId/ai-summary" element={
             <ProtectedRoute roles={['instructor']}>
               <DashboardLayout><InstructorAiSummaryPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/instructor/courses/:courseId/lessons/create" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorCreateLessonPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/instructor/courses/:courseId/assessments/create" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorCreateAssessmentPage /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="/instructor/profile" element={

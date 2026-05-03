@@ -127,17 +127,11 @@ export default function InstructorCoursePage() {
       {tab === 'lessons' && (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <button onClick={() => setShowLessonForm(true)}
+            <button onClick={() => navigate(`/instructor/courses/${courseId}/lessons/create`)}
               className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors">
               + New Lesson
             </button>
           </div>
-          {showLessonForm && (
-            <LessonForm courseId={courseId} onClose={() => setShowLessonForm(false)} onSuccess={() => { setShowLessonForm(false); fetchData(); }} />
-          )}
-          {showMaterialForm && (
-            <MaterialUploadForm courseId={courseId} lessonId={showMaterialForm} onClose={() => setShowMaterialForm(null)} onSuccess={() => { setShowMaterialForm(null); fetchData(); }} />
-          )}
           {lessons.length === 0 ? (
             <p className="text-slate-500 bg-white rounded-xl border border-slate-200 p-6 text-center">No lessons yet.</p>
           ) : (
@@ -153,11 +147,21 @@ export default function InstructorCoursePage() {
                       </span>
                     </div>
                   </div>
-                  <button onClick={() => setShowMaterialForm(lesson.id)}
+                  <button onClick={() => setShowMaterialForm(showMaterialForm === lesson.id ? null : lesson.id)}
                     className="text-sm text-teal-600 hover:text-teal-700 font-medium shrink-0">
-                    + Upload File
+                    {showMaterialForm === lesson.id ? '✕ Cancel Upload' : '+ Upload File'}
                   </button>
                 </div>
+
+                {/* Inline upload form — appears inside the lesson card */}
+                {showMaterialForm === lesson.id && (
+                  <MaterialUploadForm
+                    courseId={courseId}
+                    lessonId={lesson.id}
+                    onClose={() => setShowMaterialForm(null)}
+                    onSuccess={() => { setShowMaterialForm(null); fetchData(); }}
+                  />
+                )}
                 {/* Materials list */}
                 {lesson.materials && lesson.materials.length > 0 && (
                   <div className="border-t border-slate-100 pt-3 space-y-2">
@@ -195,14 +199,11 @@ export default function InstructorCoursePage() {
       {tab === 'assessments' && (
         <div className="space-y-4">
           <div className="flex justify-end gap-2">
-            <button onClick={() => setShowAssessmentForm(true)}
+            <button onClick={() => navigate(`/instructor/courses/${courseId}/assessments/create`)}
               className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors">
               + New Assessment
             </button>
           </div>
-          {showAssessmentForm && (
-            <AssessmentForm courseId={courseId} onClose={() => setShowAssessmentForm(false)} onSuccess={() => { setShowAssessmentForm(false); fetchData(); }} />
-          )}
           {showQuestionForm && (
             <QuestionForm courseId={courseId} assessmentId={showQuestionForm} onClose={() => setShowQuestionForm(null)} onSuccess={() => { setShowQuestionForm(null); fetchData(); }} />
           )}
@@ -461,12 +462,27 @@ function AssessmentForm({ courseId, onClose, onSuccess }) {
 
 function AnnouncementForm({ courseId, onClose, onSuccess }) {
   const [form, setForm] = useState({ title: '', content: '', is_pinned: false });
+  const [addToCalendar, setAddToCalendar] = useState(false);
+  const [calendarDate, setCalendarDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setSaving(true); setError('');
-    try { await api.post(`/courses/${courseId}/announcements`, form); onSuccess(); }
+    try {
+      await api.post(`/courses/${courseId}/announcements`, form);
+      // Also add to student calendars if toggled
+      if (addToCalendar && calendarDate) {
+        await api.post(`/courses/${courseId}/calendar`, {
+          title: form.title,
+          event_type: 'other',
+          start_date: calendarDate,
+          description: form.content,
+          color: '#f59e0b',
+        });
+      }
+      onSuccess();
+    }
     catch (err) { setError(err.response?.data?.message || 'Failed.'); }
     finally { setSaving(false); }
   };
@@ -480,10 +496,30 @@ function AnnouncementForm({ courseId, onClose, onSuccess }) {
           className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
         <textarea placeholder="Announcement content..." value={form.content} rows={4} required onChange={(e) => setForm({ ...form, content: e.target.value })}
           className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none" />
+
+        {/* Pin toggle */}
         <label className="flex items-center gap-2 text-sm text-slate-600">
           <input type="checkbox" checked={form.is_pinned} onChange={(e) => setForm({ ...form, is_pinned: e.target.checked })} className="rounded border-slate-300 text-teal-600" />
           <PushPinIcon sx={{ fontSize: 16 }} /> Pin this announcement
         </label>
+
+        {/* Calendar toggle */}
+        <div className="border border-slate-200 rounded-lg p-3 bg-white space-y-2">
+          <label className="flex items-center gap-2 text-sm text-slate-700 font-medium cursor-pointer">
+            <input type="checkbox" checked={addToCalendar} onChange={e => setAddToCalendar(e.target.checked)} className="rounded border-slate-300 text-teal-600" />
+            📅 Add to students' calendar
+          </label>
+          {addToCalendar && (
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Event date & time</label>
+              <input type="datetime-local" value={calendarDate} required={addToCalendar}
+                onChange={e => setCalendarDate(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              <p className="text-xs text-slate-400 mt-1">This will appear as a calendar event for all enrolled students.</p>
+            </div>
+          )}
+        </div>
+
         <div className="flex gap-3">
           <button type="submit" disabled={saving} className="bg-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors">{saving ? 'Posting...' : 'Post Announcement'}</button>
           <button type="button" onClick={onClose} className="bg-white text-slate-700 px-5 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 border border-slate-300 transition-colors">Cancel</button>

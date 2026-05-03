@@ -14,7 +14,12 @@ use Illuminate\Support\Facades\Http;
 
 class AiController extends Controller
 {
-    private string $aiServiceUrl = 'http://127.0.0.1:8001';
+    private string $aiServiceUrl;
+
+    public function __construct()
+    {
+        $this->aiServiceUrl = env('AI_SERVICE_URL', 'http://127.0.0.1:8001');
+    }
 
     // ─────────────────────────────────────────────
     // 1. AT-RISK PREDICTION (manual input)

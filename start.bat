@@ -12,3 +12,4 @@ echo   Frontend  -^> http://localhost:5173
 echo   AI Service-^> http://localhost:8001
 echo.
 echo Close the individual terminal windows to stop each service.
+ 

@@ -168,6 +168,13 @@ def chatbot(data: ChatRequest):
             system_prompt = (
                 f"You are an AI tutor helping a student understand a lesson titled '{data.material_title or 'this lesson'}'.\n"
                 f"Answer their questions directly based on the content below.\n"
+                f"FORMATTING RULES — always follow these:\n"
+                f"- Break your answer into short sections, never one long paragraph\n"
+                f"- Use numbered lists (1. 2. 3.) for steps, sequences, or ordered items\n"
+                f"- Use bullet points (- ) for features, facts, or unordered items\n"
+                f"- Keep each paragraph to 2-3 sentences max\n"
+                f"- Add a short bold label before each section when covering multiple topics (e.g. 'History:', 'Features:')\n"
+                f"- End with a one-line summary if the answer is long\n"
                 f"If the answer is not in the content, say: 'That topic is not covered in this lesson.'\n\n"
                 f"--- LESSON CONTENT ---\n{data.lesson_context[:6000]}\n--- END ---"
             )
@@ -175,8 +182,13 @@ def chatbot(data: ChatRequest):
             system_prompt = (
                 "You are IntelliLearn's course assistant — an AI tutor for students. "
                 "You help with academic topics, course content, and learning questions. "
-                "Keep answers concise, clear, and student-friendly (2-4 sentences max). "
+                "FORMATTING RULES — always follow these:\n"
+                "- Never write one long paragraph\n"
+                "- Use bullet points or numbered lists when listing multiple items\n"
+                "- Keep each paragraph to 2-3 sentences max\n"
+                "- Use short bold labels to separate sections when needed\n"
                 "Do NOT ask clarifying questions — give direct answers. "
+                "If the question is completely unrelated to education, say it is outside your coverage. "
                 f"Course context: {data.course_name or 'General'}"
             )
 
@@ -186,7 +198,7 @@ def chatbot(data: ChatRequest):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": data.message}
             ],
-            max_tokens=300,
+            max_tokens=500,
             temperature=0.7,
         )
         answer = response.choices[0].message.content.strip()

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
+import chatbotAvatar from '../../assets/chatbot_avatar.png';
 
 export default function StudentMaterialViewerPage() {
   const { courseId, lessonId, materialId } = useParams();
@@ -123,49 +124,114 @@ export default function StudentMaterialViewerPage() {
         )}
       </div>
 
-      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000 }}>
+      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
+        <style>{`
+          @keyframes mcPulse {
+            0%   { transform: scale(1);    opacity: 0.6; }
+            70%  { transform: scale(1.55); opacity: 0; }
+            100% { transform: scale(1.55); opacity: 0; }
+          }
+          @keyframes mcBounce {
+            0%   { transform: scale(1); }
+            30%  { transform: scale(1.18); }
+            60%  { transform: scale(0.92); }
+            80%  { transform: scale(1.06); }
+            100% { transform: scale(1); }
+          }
+          @keyframes mcSlideUp {
+            from { opacity: 0; transform: translateY(24px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+          }
+          @keyframes mcDot {
+            0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+            40%            { transform: scale(1);   opacity: 1; }
+          }
+          .mc-window { animation: mcSlideUp 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+          .mc-avatar-btn { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+          .mc-avatar-btn:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(79,70,229,0.55) !important; }
+          .mc-input:focus { border-color: #4f46e5 !important; box-shadow: 0 0 0 3px rgba(79,70,229,0.12); }
+        `}</style>
+
+        {/* Chat window */}
         {chatOpen && (
-          <div style={{ width: '320px', height: '420px', background: '#fff', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', marginBottom: '12px', overflow: 'hidden' }}>
-            <div style={{ background: '#4f46e5', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <p style={{ color: '#fff', fontWeight: 600, fontSize: '14px', margin: 0 }}>Course Assistant</p>
-                <p style={{ color: '#c7d2fe', fontSize: '11px', margin: 0 }}>
-                  {lessonContext ? 'Reading this PDF' : 'Ask about your courses'}
-                </p>
+          <div className="mc-window" style={{ width: 340, height: 460, background: '#fff', borderRadius: 20, boxShadow: '0 12px 40px rgba(0,0,0,0.18)', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Header */}
+            <div style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #a78bfa)', border: '2px solid rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                <img src={chatbotAvatar} alt="Assistant" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
-              <button onClick={() => setChatOpen(false)} style={{ color: '#c7d2fe', background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }}>x</button>
+              <div style={{ flex: 1 }}>
+                <p style={{ color: '#fff', fontWeight: 700, fontSize: 14, margin: 0, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                  {lessonContext ? `📄 ${material?.title || 'Material Assistant'}` : 'IntelliLearn Assistant'}
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80' }} />
+                  <p style={{ color: '#c7d2fe', fontSize: 11, margin: 0 }}>
+                    {lessonContext ? 'Reading this material' : 'Ask about your courses'}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setChatOpen(false)} style={{ color: 'rgba(255,255,255,0.7)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 4 }}>✕</button>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+
+            {/* Messages */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
               {messages.map((msg, idx) => (
-                <div key={idx} style={{ display: 'flex', justifyContent: msg.from === 'user' ? 'flex-end' : 'flex-start' }}>
-                  <div style={{ maxWidth: '80%', padding: '8px 12px', borderRadius: '12px', fontSize: '13px', lineHeight: '1.4', background: msg.from === 'user' ? '#4f46e5' : '#f1f5f9', color: msg.from === 'user' ? '#fff' : '#334155' }}>
+                <div key={idx} style={{ display: 'flex', justifyContent: msg.from === 'user' ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 8 }}>
+                  {msg.from === 'bot' && (
+                    <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                      <img src={chatbotAvatar} alt="Bot" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  )}
+                  <div style={{ maxWidth: '78%', padding: '9px 13px', borderRadius: msg.from === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px', fontSize: 13, lineHeight: 1.5, background: msg.from === 'user' ? 'linear-gradient(135deg, #4f46e5, #7c3aed)' : '#f1f5f9', color: msg.from === 'user' ? '#fff' : '#334155', boxShadow: msg.from === 'user' ? '0 2px 8px rgba(79,70,229,0.25)' : 'none', whiteSpace: 'pre-wrap' }}>
                     {msg.text}
                   </div>
                 </div>
               ))}
               {loading && (
-                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                  <div style={{ background: '#f1f5f9', padding: '8px 12px', borderRadius: '12px', fontSize: '13px', color: '#94a3b8' }}>Thinking...</div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                    <img src={chatbotAvatar} alt="Bot" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  <div style={{ background: '#f1f5f9', padding: '9px 13px', borderRadius: '16px 16px 16px 4px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {[0,1,2].map(i => (
+                      <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: '#94a3b8', animation: 'mcDot 1.2s ease-in-out infinite', animationDelay: `${i * 0.2}s` }} />
+                    ))}
+                  </div>
                 </div>
               )}
               <div ref={bottomRef} />
             </div>
-            <div style={{ padding: '10px 12px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '8px' }}>
-              <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
+
+            {/* Input */}
+            <div style={{ padding: '10px 12px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 8, background: '#fafafa' }}>
+              <input className="mc-input" value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
                 placeholder="Ask about this material..."
-                style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none' }} />
+                style={{ flex: 1, padding: '9px 13px', borderRadius: 10, border: '1.5px solid #e2e8f0', fontSize: 13, outline: 'none', fontFamily: "'DM Sans', sans-serif", background: 'white', transition: 'border-color 0.2s, box-shadow 0.2s' }} />
               <button onClick={sendMessage} disabled={loading || !input.trim()}
-                style={{ background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '13px', opacity: loading || !input.trim() ? 0.5 : 1 }}>
+                style={{ background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 10, padding: '9px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: loading || !input.trim() ? 0.45 : 1, transition: 'opacity 0.2s', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 Send
               </button>
             </div>
           </div>
         )}
-        <button onClick={() => setChatOpen(v => !v)}
-          style={{ width: '52px', height: '52px', borderRadius: '50%', background: '#4f46e5', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '22px', boxShadow: '0 4px 16px rgba(79,70,229,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          title="Course Assistant">
-          {chatOpen ? 'x' : '💬'}
-        </button>
+
+        {/* Avatar toggle button */}
+        <div style={{ position: 'relative' }}>
+          {!chatOpen && (
+            <>
+              <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(79,70,229,0.35)', animation: 'mcPulse 2s ease-out infinite', pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(79,70,229,0.2)', animation: 'mcPulse 2s ease-out infinite', animationDelay: '0.6s', pointerEvents: 'none' }} />
+            </>
+          )}
+          <button className="mc-avatar-btn" onClick={() => setChatOpen(v => !v)} title="Course Assistant"
+            style={{ width: 58, height: 58, borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', border: '3px solid white', cursor: 'pointer', padding: 0, boxShadow: '0 4px 20px rgba(79,70,229,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
+            {chatOpen
+              ? <span style={{ color: 'white', fontSize: 20, fontWeight: 700 }}>✕</span>
+              : <img src={chatbotAvatar} alt="Assistant" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+            }
+          </button>
+        </div>
       </div>
     </div>
   );
