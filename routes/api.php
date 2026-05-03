@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\LessonController;
@@ -18,15 +19,35 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 // PUBLIC ROUTES
 // =============================================================
 
+// Health check for Railway
+Route::get('/health', fn() => response()->json(['status' => 'ok']));
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
-Route::get('/verify-email/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $request->fulfill();
-    return response()->json(['message' => 'Email verified successfully.']);
-})->middleware(['auth:sanctum', 'signed'])->name('verification.verify');
+Route::get('/verify-email/{id}/{hash}', function (Request $request, $id, $hash) {
+    $user = \App\Models\User::findOrFail($id);
+    $frontend = env('FRONTEND_URL', 'http://localhost:5173');
+
+    // Validate the signed URL
+    if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+        return redirect("{$frontend}/verify-email?status=error");
+    }
+
+    if (! $request->hasValidSignature()) {
+        return redirect("{$frontend}/verify-email?status=error");
+    }
+
+    if ($user->hasVerifiedEmail()) {
+        return redirect("{$frontend}/verify-email?status=already");
+    }
+
+    $user->markEmailAsVerified();
+
+    return redirect("{$frontend}/verify-email?status=success");
+})->middleware(['signed'])->name('verification.verify');
 
 
 // =============================================================
@@ -47,12 +68,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- COURSES ---
     Route::get('/courses', [CourseController::class, 'index']);
     Route::post('/courses', [CourseController::class, 'store']);
+    Route::post('/courses/join', [CourseController::class, 'joinByCode']);
     Route::get('/courses/{course}', [CourseController::class, 'show']);
     Route::put('/courses/{course}', [CourseController::class, 'update']);
     Route::delete('/courses/{course}', [CourseController::class, 'destroy']);
     Route::post('/courses/{course}/enroll', [CourseController::class, 'enroll']);
     Route::post('/courses/{course}/unenroll', [CourseController::class, 'unenroll']);
     Route::get('/courses/{course}/students', [CourseController::class, 'students']);
+    Route::post('/courses/{course}/generate-code', [CourseController::class, 'generateCode']);
+    Route::delete('/courses/{course}/join-code', [CourseController::class, 'revokeCode']);
 
     // --- LESSONS ---
     Route::get('/courses/{course}/lessons', [LessonController::class, 'index']);
@@ -106,6 +130,83 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/courses/{course}/grades/compute', [GradeController::class, 'compute']);
 
     // --- STUDENT ACTIVITY FEED ---
+    Route::get('/student/stats', function (\Illuminate\Http\Request $request) {
+        $user = $request->user();
+        if (! $user->isStudent()) {
+            return response()->json(['message' => 'Students only.'], 403);
+        }
+
+        $courseIds = \App\Models\Enrollment::where('user_id', $user->id)
+            ->where('status', 'active')->pluck('course_id');
+
+        // Overall grade — average of all computed grades
+        $grades = \App\Models\Grade::where('user_id', $user->id)
+            ->whereIn('course_id', $courseIds)
+            ->whereNotNull('overall_grade')
+            ->pluck('overall_grade');
+        $overallGrade = $grades->count() > 0
+            ? round($grades->avg(), 1)
+            : null;
+
+        // Lessons done vs total
+        $totalLessons = \App\Models\Lesson::whereIn('course_id', $courseIds)
+            ->where('is_published', true)->count();
+        $lessonsDone = \App\Models\LessonProgress::where('user_id', $user->id)
+            ->whereHas('lesson', fn($q) => $q->whereIn('course_id', $courseIds))
+            ->where('status', 'done')->count();
+
+        // Pending tasks — published assessments not yet submitted
+        $totalAssessments = \App\Models\Assessment::whereIn('course_id', $courseIds)
+            ->where('is_published', true)->count();
+        $submitted = \App\Models\Submission::where('user_id', $user->id)
+            ->whereHas('assessment', fn($q) => $q->whereIn('course_id', $courseIds))
+            ->whereIn('status', ['submitted', 'graded'])->count();
+        $pendingTasks = max(0, $totalAssessments - $submitted);
+
+        return response()->json([
+            'overall_grade'  => $overallGrade,
+            'lessons_done'   => $lessonsDone,
+            'lessons_total'  => $totalLessons,
+            'pending_tasks'  => $pendingTasks,
+        ]);
+    });
+
+    Route::get('/student/ai-recommendations', function (\Illuminate\Http\Request $request) {
+        $user = $request->user();
+        if (! $user->isStudent()) {
+            return response()->json(['message' => 'Students only.'], 403);
+        }
+
+        $courseIds = \App\Models\Enrollment::where('user_id', $user->id)
+            ->where('status', 'active')->pluck('course_id');
+
+        // Find the most recent graded quiz with a low score
+        $lowQuiz = \App\Models\Submission::where('user_id', $user->id)
+            ->whereHas('assessment', fn($q) => $q->whereIn('course_id', $courseIds)->where('type', 'quiz'))
+            ->where('status', 'graded')
+            ->where('percentage', '<', 75)
+            ->with('assessment:id,title,topic')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if (!$lowQuiz) {
+            return response()->json(null);
+        }
+
+        $topic = $lowQuiz->assessment->topic ?? 'the related topic';
+        $score = $lowQuiz->percentage;
+        $title = $lowQuiz->assessment->title;
+
+        return response()->json([
+            'description' => "Based on your {$title} score (" . round($score) . "%), IntelliLearn recommends reviewing these topics:",
+            'topics' => [
+                "Review lesson materials for: {$topic}",
+                "Re-attempt {$title} after reviewing",
+                "Ask your instructor for clarification on weak areas",
+            ],
+        ]);
+    });
+
     Route::get('/student/feed', function (\Illuminate\Http\Request $request) {
         $user = $request->user();
         if (! $user->isStudent()) {
@@ -164,6 +265,65 @@ Route::middleware('auth:sanctum')->group(function () {
         $sorted = $feed->sortByDesc('created_at')->values()->take(30);
 
         return response()->json(['feed' => $sorted]);
+    });
+
+    // --- AI / PREDICTIONS ---
+    Route::post('/ai/predict', [AiController::class, 'predict']);
+    Route::get('/ai/my-risk', [AiController::class, 'myRisk']);
+    Route::get('/ai/courses/{course}/student-risk', [AiController::class, 'courseRisk']);
+    Route::post('/ai/recommend', [AiController::class, 'recommend']);
+    Route::post('/ai/quiz-feedback', [AiController::class, 'quizFeedback']);
+    Route::post('/ai/chatbot', [AiController::class, 'chatbot']);
+    Route::get('/ai/materials/{material}/context', [AiController::class, 'materialContext']);
+
+    // --- INSTRUCTOR STATS ---
+    Route::get('/instructor/stats', function (\Illuminate\Http\Request $request) {
+        $user = $request->user();
+        if (! $user->isInstructor() && ! $user->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $courses = \App\Models\Course::where('instructor_id', $user->id)->withCount('students')->get();
+        $courseIds = $courses->pluck('id');
+
+        $totalStudents = $courses->sum('students_count');
+
+        // Pending grading — submitted but not yet graded
+        $pendingGrading = \App\Models\Submission::whereHas('assessment', fn($q) => $q->whereIn('course_id', $courseIds))
+            ->where('status', 'submitted')->count();
+
+        // Class average — average of all computed overall grades
+        $grades = \App\Models\Grade::whereIn('course_id', $courseIds)->whereNotNull('overall_grade')->pluck('overall_grade');
+        $classAverage = $grades->count() > 0 ? round($grades->avg(), 1) : null;
+
+        // At-risk students count
+        $atRiskCount = 0;
+        foreach ($courses as $course) {
+            $totalAssessments = \App\Models\Assessment::where('course_id', $course->id)->where('is_published', true)->count();
+            $students = $course->students()->wherePivot('status', 'active')->get();
+            foreach ($students as $student) {
+                $submissions = \App\Models\Submission::where('user_id', $student->id)
+                    ->whereHas('assessment', fn($q) => $q->where('course_id', $course->id)->where('type', 'quiz'))
+                    ->where('status', 'graded')->get();
+                $quizAvg = $submissions->count() > 0 ? $submissions->avg('percentage') : 0;
+                $submitted = \App\Models\Submission::where('user_id', $student->id)
+                    ->whereHas('assessment', fn($q) => $q->where('course_id', $course->id))
+                    ->whereIn('status', ['submitted', 'graded'])->count();
+                $submissionRate = $totalAssessments > 0 ? $submitted / $totalAssessments : 0;
+                $missedTasks = max(0, $totalAssessments - $submitted);
+                if ($quizAvg < 70 || $submissionRate < 0.6 || $missedTasks > 3) {
+                    $atRiskCount++;
+                }
+            }
+        }
+
+        return response()->json([
+            'my_courses'       => $courses->count(),
+            'total_students'   => $totalStudents,
+            'pending_grading'  => $pendingGrading,
+            'class_average'    => $classAverage,
+            'at_risk_students' => $atRiskCount,
+        ]);
     });
 
     // --- ADMIN USER MANAGEMENT ---

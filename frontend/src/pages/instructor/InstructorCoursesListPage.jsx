@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import ScienceIcon from '@mui/icons-material/Science';
@@ -19,6 +19,7 @@ const courseColors = [
 export default function InstructorCoursesListPage() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.get('/courses')
@@ -42,6 +43,12 @@ export default function InstructorCoursesListPage() {
         {/* Page heading */}
         <header className="dashboard-title-row">
           <h1>My Courses</h1>
+          <button
+            onClick={() => navigate('/instructor/courses/create')}
+            className="bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors"
+          >
+            + Create Course
+          </button>
         </header>
 
         {/* Full course list */}

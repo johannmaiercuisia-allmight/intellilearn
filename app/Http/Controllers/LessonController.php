@@ -10,6 +10,7 @@ use App\Models\LessonProgress;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Smalot\PdfParser\Parser as PdfParser;
 
 class LessonController extends Controller
 {
@@ -258,29 +259,43 @@ class LessonController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'type'  => ['required', 'in:pdf,docx,video,ppt,link,other'],
-            'file'  => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,mp4,mov', 'max:51200'],
+            'file'  => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,mp4,mov', 'max:102400'],
             'url'   => ['nullable', 'url'],
             'order' => ['nullable', 'integer', 'min:0'],
         ]);
 
         $filePath = null;
+        $extractedText = null;
 
         // Handle file upload
         if ($request->hasFile('file')) {
-            // Stores in storage/app/public/materials/course_1/lesson_1/filename.pdf
             $filePath = $request->file('file')->store(
                 "materials/course_{$course->id}/lesson_{$lesson->id}",
                 'public'
             );
+
+            // Extract text from PDF for AI chatbot
+            if ($validated['type'] === 'pdf') {
+                try {
+                    $fullPath = Storage::disk('public')->path($filePath);
+                    $parser = new PdfParser();
+                    $pdf = $parser->parseFile($fullPath);
+                    $extractedText = substr($pdf->getText(), 0, 8000); // limit to 8000 chars
+                } catch (\Exception $e) {
+                    // Extraction failed — not critical, just skip
+                    $extractedText = null;
+                }
+            }
         }
 
         $material = LessonMaterial::create([
-            'lesson_id' => $lesson->id,
-            'title'     => $validated['title'],
-            'type'      => $validated['type'],
-            'file_path' => $filePath,
-            'url'       => $validated['url'] ?? null,
-            'order'     => $validated['order'] ?? $lesson->materials()->count(),
+            'lesson_id'      => $lesson->id,
+            'title'          => $validated['title'],
+            'type'           => $validated['type'],
+            'file_path'      => $filePath,
+            'url'            => $validated['url'] ?? null,
+            'order'          => $validated['order'] ?? $lesson->materials()->count(),
+            'extracted_text' => $extractedText,
         ]);
 
         return response()->json([

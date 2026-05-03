@@ -31,25 +31,18 @@ class AuthController extends Controller
      */
     public function register(RegisterRequest $request): JsonResponse
     {
-        // Create the user — password is auto-hashed because of
-        // the 'hashed' cast we set in the User model
         $user = User::create([
             'first_name' => $request->first_name,
             'last_name'  => $request->last_name,
             'email'      => $request->email,
             'password'   => $request->password,
-            'role'       => 'student', // default role — admin assigns instructor/admin later
+            'role'       => 'student',
         ]);
 
-        // Fire the Registered event — this triggers email verification
         event(new Registered($user));
 
-        // Create a Sanctum API token so the user is immediately logged in
-        // The token name helps identify where the login came from
-        $token = $user->createToken('auth-token')->plainTextToken;
-
         return response()->json([
-            'message' => 'Registration successful.',
+            'message' => 'Registration successful. Please check your email to verify your account.',
             'user'    => [
                 'id'         => $user->id,
                 'first_name' => $user->first_name,
@@ -58,8 +51,7 @@ class AuthController extends Controller
                 'role'       => $user->role,
                 'full_name'  => $user->full_name,
             ],
-            'token' => $token,
-        ], 201); // 201 = "Created" HTTP status
+        ], 201);
     }
 
     /**
@@ -91,6 +83,13 @@ class AuthController extends Controller
         if (! $user->is_active) {
             throw ValidationException::withMessages([
                 'email' => ['Your account has been deactivated. Please contact the administrator.'],
+            ]);
+        }
+
+        // Check if email is verified
+        if (! $user->hasVerifiedEmail()) {
+            throw ValidationException::withMessages([
+                'email' => ['Please verify your email address before logging in.'],
             ]);
         }
 
@@ -206,8 +205,16 @@ class AuthController extends Controller
         $request->validate([
             'token'    => ['required'],
             'email'    => ['required', 'email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', 'min:8', 'confirmed', 'regex:/[A-Z]/', 'regex:/[0-9]/'],
         ]);
+
+        // Check that new password is different from current
+        $user = User::where('email', $request->email)->first();
+        if ($user && Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => ['New password must be different from your current password.'],
+            ]);
+        }
 
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),

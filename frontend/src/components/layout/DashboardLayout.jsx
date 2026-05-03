@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -21,10 +22,11 @@ import ScienceIcon from '@mui/icons-material/Science';
 
 const navItems = {
   student: [
-    { label: 'Dashboard', path: '/student', icon: <DashboardIcon fontSize="small" /> },
-    { label: 'Courses', path: '/student/courses', icon: <MenuBookIcon fontSize="small" /> },
-    { label: 'Calendar', path: '/student/calendar', icon: <CalendarMonthIcon fontSize="small" /> },
-    { label: 'Profile', path: '/student/profile', icon: <PersonIcon fontSize="small" /> },
+    { label: 'Dashboard',  path: '/student',            icon: <DashboardIcon fontSize="small" /> },
+    { label: 'Courses',    path: '/student/courses',     icon: <MenuBookIcon fontSize="small" /> },
+    { label: 'Calendar',   path: '/student/calendar',    icon: <CalendarMonthIcon fontSize="small" /> },
+    { label: 'Risk Check', path: '/student/risk-check',  icon: <WarningAmberIcon fontSize="small" /> },
+    { label: 'Profile',    path: '/student/profile',     icon: <PersonIcon fontSize="small" /> },
   ],
   instructor: [
     { label: 'Dashboard', path: '/instructor', icon: <DashboardIcon fontSize="small" /> },
@@ -199,12 +201,38 @@ export default function DashboardLayout({ children }) {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [allCourses, setAllCourses] = useState([]);
   const searchRef = useRef(null);
+
+  // Load feed and compute unread count vs last seen
+  useEffect(() => {
+    if (user?.role !== 'student') return;
+    api.get('/student/feed')
+      .then(res => {
+        const feed = res.data.feed || [];
+        const lastSeen = parseInt(localStorage.getItem('notif_last_seen_count') || '0', 10);
+        const newCount = Math.max(0, feed.length - lastSeen);
+        setUnreadCount(newCount);
+      })
+      .catch(() => {});
+  }, [user]);
+
+  const handleOpenNotif = () => {
+    setNotifOpen(v => !v);
+    // Mark all as seen — store current total so badge resets
+    api.get('/student/feed')
+      .then(res => {
+        const total = (res.data.feed || []).length;
+        localStorage.setItem('notif_last_seen_count', String(total));
+        setUnreadCount(0);
+      })
+      .catch(() => {});
+  };
 
   const items = navItems[user?.role] || [];
 
@@ -327,9 +355,32 @@ export default function DashboardLayout({ children }) {
               <button
                 className="topbar-icon-btn"
                 title="Notifications"
-                onClick={() => setNotifOpen((v) => !v)}
+                onClick={handleOpenNotif}
               >
                 <NotificationsIcon fontSize="small" />
+                {unreadCount > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: -4, right: -4,
+                    background: '#ef4444',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    borderRadius: '99px',
+                    minWidth: '18px',
+                    height: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 4px',
+                    lineHeight: 1,
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    border: '2px solid white',
+                    pointerEvents: 'none',
+                  }}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
               {notifOpen && <NotificationPanel onClose={() => setNotifOpen(false)} />}
             </div>

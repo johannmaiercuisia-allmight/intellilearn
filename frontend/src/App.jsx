@@ -6,6 +6,9 @@ import DashboardLayout from './components/layout/DashboardLayout';
 // Auth
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import VerifyEmailPage from './pages/auth/VerifyEmailPage';
 
 // Student
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -16,6 +19,7 @@ import StudentLessonPage from './pages/student/StudentLessonPage';
 import StudentMaterialViewerPage from './pages/student/StudentMaterialViewerPage';
 import StudentProfilePage from './pages/student/StudentProfilePage';
 import StudentCalendarPage from './pages/student/StudentCalendarPage';
+import StudentRiskCheckPage from './pages/student/StudentRiskCheckPage';
 
 // Instructor
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
@@ -24,6 +28,10 @@ import InstructorCoursePage from './pages/instructor/InstructorCoursePage';
 import InstructorAssessmentPage from './pages/instructor/InstructorAssessmentPage';
 import InstructorStudentsPage from './pages/instructor/InstructorStudentsPage';
 import InstructorGradePage from './pages/instructor/InstructorGradePage';
+import InstructorCreateCoursePage from './pages/instructor/InstructorCreateCoursePage';
+import InstructorAiSummaryPage from './pages/instructor/InstructorAiSummaryPage';
+import InstructorCreateLessonPage from './pages/instructor/InstructorCreateLessonPage';
+import InstructorCreateAssessmentPage from './pages/instructor/InstructorCreateAssessmentPage';
 
 // Admin
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -50,6 +58,9 @@ export default function App() {
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           <Route path="/" element={<RoleRedirect />} />
 
@@ -94,6 +105,11 @@ export default function App() {
               <DashboardLayout><StudentProfilePage /></DashboardLayout>
             </ProtectedRoute>
           } />
+          <Route path="/student/risk-check" element={
+            <ProtectedRoute roles={['student']}>
+              <DashboardLayout><StudentRiskCheckPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
 
           {/* ── Instructor ── */}
           <Route path="/instructor" element={
@@ -105,6 +121,11 @@ export default function App() {
           <Route path="/instructor/courses" element={
             <ProtectedRoute roles={['instructor']}>
               <DashboardLayout><InstructorCoursesListPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/instructor/courses/create" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorCreateCoursePage /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="/instructor/courses/:courseId" element={
@@ -125,6 +146,21 @@ export default function App() {
           <Route path="/instructor/grading" element={
             <ProtectedRoute roles={['instructor']}>
               <DashboardLayout><InstructorGradePage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/instructor/courses/:courseId/ai-summary" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorAiSummaryPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/instructor/courses/:courseId/lessons/create" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorCreateLessonPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/instructor/courses/:courseId/assessments/create" element={
+            <ProtectedRoute roles={['instructor']}>
+              <DashboardLayout><InstructorCreateAssessmentPage /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="/instructor/profile" element={

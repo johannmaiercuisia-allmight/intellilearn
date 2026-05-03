@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class CourseController extends Controller
 {
@@ -52,33 +53,42 @@ class CourseController extends Controller
      * CREATE A NEW COURSE
      *
      * POST /api/courses
-     * Body: { name, code, description, instructor_id, semester, section }
+     * Body: { name, code, description, instructor_id (admin only), semester, section }
      *
-     * Only admins can create courses.
+     * Admins can create courses for any instructor.
+     * Instructors can create their own courses (instructor_id is auto-set).
      */
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
 
-        // Only admins can create courses
-        if (! $user->isAdmin()) {
+        if (! $user->isAdmin() && ! $user->isInstructor()) {
             return response()->json([
-                'message' => 'Only administrators can create courses.',
-            ], 403); // 403 = Forbidden
+                'message' => 'Only administrators and instructors can create courses.',
+            ], 403);
         }
 
-        $validated = $request->validate([
-            'name'          => ['required', 'string', 'max:255'],
-            'code'          => ['required', 'string', 'max:50', 'unique:courses'],
-            'description'   => ['nullable', 'string'],
-            'instructor_id' => ['required', 'exists:users,id'],
-            'semester'      => ['required', 'string', 'max:100'],
-            'section'       => ['nullable', 'string', 'max:50'],
-        ]);
+        $rules = [
+            'name'        => ['required', 'string', 'max:255'],
+            'code'        => ['required', 'string', 'max:50', 'unique:courses'],
+            'description' => ['nullable', 'string'],
+            'semester'    => ['required', 'string', 'max:100'],
+            'section'     => ['nullable', 'string', 'max:50'],
+        ];
+
+        // Only admins can assign a different instructor
+        if ($user->isAdmin()) {
+            $rules['instructor_id'] = ['required', 'exists:users,id'];
+        }
+
+        $validated = $request->validate($rules);
+
+        // Instructors always own their own course
+        if ($user->isInstructor()) {
+            $validated['instructor_id'] = $user->id;
+        }
 
         $course = Course::create($validated);
-
-        // Load the instructor relationship for the response
         $course->load('instructor:id,first_name,last_name,email');
 
         return response()->json([
@@ -284,6 +294,109 @@ class CourseController extends Controller
         return response()->json([
             'students' => $students,
         ]);
+    }
+
+    /**
+     * GENERATE A JOIN CODE FOR A COURSE
+     *
+     * POST /api/courses/{id}/generate-code
+     *
+     * Admin or the course instructor can generate/regenerate the code.
+     */
+    public function generateCode(Request $request, Course $course): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user->isAdmin() && $course->instructor_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        do {
+            $code = strtoupper(Str::random(8));
+        } while (Course::where('join_code', $code)->exists());
+
+        $course->update(['join_code' => $code]);
+
+        return response()->json([
+            'message'   => 'Join code generated.',
+            'join_code' => $course->join_code,
+        ]);
+    }
+
+    /**
+     * REVOKE THE JOIN CODE FOR A COURSE
+     *
+     * DELETE /api/courses/{id}/join-code
+     */
+    public function revokeCode(Request $request, Course $course): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user->isAdmin() && $course->instructor_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $course->update(['join_code' => null]);
+
+        return response()->json(['message' => 'Join code revoked.']);
+    }
+
+    /**
+     * JOIN A COURSE BY CODE
+     *
+     * POST /api/courses/join
+     * Body: { code }
+     *
+     * Students use this to self-enroll via a join code.
+     */
+    public function joinByCode(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user->isStudent()) {
+            return response()->json(['message' => 'Only students can join courses by code.'], 403);
+        }
+
+        $validated = $request->validate([
+            'code' => ['required', 'string'],
+        ]);
+
+        $course = Course::where('join_code', strtoupper(trim($validated['code'])))
+            ->where('status', 'active')
+            ->first();
+
+        if (! $course) {
+            return response()->json(['message' => 'Invalid or expired join code.'], 404);
+        }
+
+        $existing = Enrollment::where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->first();
+
+        if ($existing) {
+            if ($existing->status === 'active') {
+                return response()->json(['message' => 'You are already enrolled in this course.'], 422);
+            }
+            $existing->update(['status' => 'active']);
+            $course->load('instructor:id,first_name,last_name,email');
+            return response()->json([
+                'message' => 'Successfully re-enrolled in ' . $course->name . '.',
+                'course'  => $course,
+            ]);
+        }
+
+        Enrollment::create([
+            'user_id'   => $user->id,
+            'course_id' => $course->id,
+            'status'    => 'active',
+        ]);
+
+        $course->load('instructor:id,first_name,last_name,email');
+
+        return response()->json([
+            'message' => 'Successfully joined ' . $course->name . '.',
+            'course'  => $course,
+        ], 201);
     }
 
     // -------------------------------------------------------

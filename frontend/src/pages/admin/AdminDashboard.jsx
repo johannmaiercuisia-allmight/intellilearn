@@ -7,13 +7,29 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(null);
 
-  useEffect(() => {
+  const fetchCourses = () => {
     api.get('/courses')
       .then((res) => setCourses(res.data.courses))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { fetchCourses(); }, []);
+
+  const handleDelete = async (course) => {
+    if (!confirm(`Delete "${course.name}"? This will remove all lessons, assessments, and enrollments. This cannot be undone.`)) return;
+    setDeleting(course.id);
+    try {
+      await api.delete(`/courses/${course.id}`);
+      setCourses(prev => prev.filter(c => c.id !== course.id));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete course.');
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -61,6 +77,7 @@ export default function AdminDashboard() {
                 <th style={{ textAlign: 'left', padding: '12px 0', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.78rem' }}>Instructor</th>
                 <th style={{ textAlign: 'left', padding: '12px 0', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.78rem' }}>Students</th>
                 <th style={{ textAlign: 'left', padding: '12px 0', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.78rem' }}>Status</th>
+                <th style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.78rem' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -82,10 +99,38 @@ export default function AdminDashboard() {
                       {course.status}
                     </span>
                   </td>
+                  <td style={{ padding: '12px 0', textAlign: 'right' }}>
+                    <button
+                      onClick={() => handleDelete(course)}
+                      disabled={deleting === course.id}
+                      style={{
+                        background: '#FEF2F2',
+                        color: '#DC2626',
+                        border: '1px solid #FECACA',
+                        borderRadius: '8px',
+                        padding: '6px 14px',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        cursor: deleting === course.id ? 'not-allowed' : 'pointer',
+                        opacity: deleting === course.id ? 0.6 : 1,
+                        transition: 'all 0.15s',
+                        fontFamily: "'Plus Jakarta Sans', sans-serif",
+                      }}
+                      onMouseEnter={e => { if (deleting !== course.id) { e.target.style.background = '#DC2626'; e.target.style.color = 'white'; }}}
+                      onMouseLeave={e => { e.target.style.background = '#FEF2F2'; e.target.style.color = '#DC2626'; }}
+                    >
+                      {deleting === course.id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {courses.length === 0 && (
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px 0', fontSize: '0.9rem' }}>
+              No courses yet.
+            </p>
+          )}
         </div>
       </div>
     </div>

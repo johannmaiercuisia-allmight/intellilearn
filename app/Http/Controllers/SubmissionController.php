@@ -192,6 +192,63 @@ class SubmissionController extends Controller
 
         $submission->save();
 
+        // Auto-compute grades for this student in this course
+        try {
+            $totalAssessments = Assessment::where('course_id', $course->id)
+                ->where('is_published', true)->count();
+            $submissions = Submission::where('user_id', $user->id)
+                ->where('status', 'graded')
+                ->whereHas('assessment', fn($q) => $q->where('course_id', $course->id))
+                ->with('assessment:id,type')
+                ->get();
+
+            $quizScores = []; $examScores = []; $activityScores = []; $recitationScores = [];
+            foreach ($submissions as $sub) {
+                if ($sub->percentage === null) continue;
+                match($sub->assessment->type) {
+                    'quiz'                => $quizScores[] = $sub->percentage,
+                    'long_exam'           => $examScores[] = $sub->percentage,
+                    'individual_activity',
+                    'group_activity'      => $activityScores[] = $sub->percentage,
+                    'recitation'          => $recitationScores[] = $sub->percentage,
+                    default               => null,
+                };
+            }
+
+            $avg = fn($arr) => count($arr) > 0 ? round(array_sum($arr) / count($arr), 2) : null;
+            $quizAvg       = $avg($quizScores);
+            $examAvg       = $avg($examScores);
+            $activityAvg   = $avg($activityScores);
+            $recitationAvg = $avg($recitationScores);
+
+            $components = [];
+            if ($quizAvg !== null)       $components[] = ['avg' => $quizAvg,       'weight' => 0.30];
+            if ($examAvg !== null)       $components[] = ['avg' => $examAvg,       'weight' => 0.30];
+            if ($activityAvg !== null)   $components[] = ['avg' => $activityAvg,   'weight' => 0.25];
+            if ($recitationAvg !== null) $components[] = ['avg' => $recitationAvg, 'weight' => 0.15];
+
+            $overall = null;
+            if (count($components) > 0) {
+                $totalWeight = array_sum(array_column($components, 'weight'));
+                $weightedSum = array_sum(array_map(fn($c) => $c['avg'] * $c['weight'], $components));
+                $overall = round($weightedSum / $totalWeight, 2);
+            }
+
+            \App\Models\Grade::updateOrCreate(
+                ['user_id' => $user->id, 'course_id' => $course->id],
+                [
+                    'quiz_average'       => $quizAvg,
+                    'exam_average'       => $examAvg,
+                    'activity_average'   => $activityAvg,
+                    'recitation_average' => $recitationAvg,
+                    'overall_grade'      => $overall,
+                    'remarks'            => $overall !== null ? ($overall >= 75 ? 'Passed' : 'Failed') : null,
+                ]
+            );
+        } catch (\Exception $e) {
+            // Grade auto-compute failed — not critical
+        }
+
         // Load answers for the response
         $submission->load('answers.question');
 

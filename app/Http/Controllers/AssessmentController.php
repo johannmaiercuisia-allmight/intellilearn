@@ -217,12 +217,22 @@ class AssessmentController extends Controller
         $validated = $request->validate([
             'question_text'  => ['required', 'string'],
             'type'           => ['required', 'in:multiple_choice,true_false,short_answer,essay'],
-            'options'        => ['nullable', 'array'],         // Required for MC and T/F
-            'options.*'      => ['string'],                    // Each option must be a string
-            'correct_answer' => ['nullable', 'string'],        // Not required for essay
+            'options'        => ['nullable', 'array'],
+            'options.*'      => ['string'],
+            'correct_answer' => ['nullable', 'string'],
             'points'         => ['nullable', 'numeric', 'min:0.01'],
             'order'          => ['nullable', 'integer', 'min:0'],
         ]);
+
+        // Require options for multiple choice
+        if ($validated['type'] === 'multiple_choice') {
+            if (empty($validated['options']) || count($validated['options']) < 2) {
+                return response()->json(['message' => 'Multiple choice questions require at least 2 options.'], 422);
+            }
+            if (empty($validated['correct_answer'])) {
+                return response()->json(['message' => 'Multiple choice questions require a correct answer.'], 422);
+            }
+        }
 
         // Auto-set order if not provided
         if (! isset($validated['order'])) {

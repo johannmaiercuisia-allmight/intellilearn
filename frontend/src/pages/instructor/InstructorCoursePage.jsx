@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import PushPinIcon from '@mui/icons-material/PushPin';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 export default function InstructorCoursePage() {
   const { courseId } = useParams();
@@ -20,6 +21,10 @@ export default function InstructorCoursePage() {
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
   const [showEventForm, setShowEventForm] = useState(false);
   const [showMaterialForm, setShowMaterialForm] = useState(null); // lessonId
+
+  // Join code state
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   const fetchData = () => {
     Promise.all([
@@ -50,7 +55,7 @@ export default function InstructorCoursePage() {
 
   if (!course) return <p className="text-slate-500">Course not found.</p>;
 
-  const tabs = ['lessons', 'assessments', 'announcements', 'students'];
+  const tabs = ['lessons', 'assessments', 'announcements', 'students', 'calendar'];
 
   const deleteAnnouncement = async (id) => {
     if (!confirm('Delete this announcement?')) return;
@@ -60,6 +65,37 @@ export default function InstructorCoursePage() {
     } catch (err) {
       alert('Failed to delete.');
     }
+  };
+
+  const handleGenerateCode = async () => {
+    setCodeLoading(true);
+    try {
+      const res = await api.post(`/courses/${courseId}/generate-code`);
+      setCourse((prev) => ({ ...prev, join_code: res.data.join_code }));
+    } catch (err) {
+      alert('Failed to generate code.');
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
+  const handleRevokeCode = async () => {
+    if (!confirm('Revoke this join code? Students will no longer be able to use it.')) return;
+    setCodeLoading(true);
+    try {
+      await api.delete(`/courses/${courseId}/join-code`);
+      setCourse((prev) => ({ ...prev, join_code: null }));
+    } catch (err) {
+      alert('Failed to revoke code.');
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(course.join_code);
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 2000);
   };
 
   return (
@@ -91,17 +127,11 @@ export default function InstructorCoursePage() {
       {tab === 'lessons' && (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <button onClick={() => setShowLessonForm(true)}
+            <button onClick={() => navigate(`/instructor/courses/${courseId}/lessons/create`)}
               className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors">
               + New Lesson
             </button>
           </div>
-          {showLessonForm && (
-            <LessonForm courseId={courseId} onClose={() => setShowLessonForm(false)} onSuccess={() => { setShowLessonForm(false); fetchData(); }} />
-          )}
-          {showMaterialForm && (
-            <MaterialUploadForm courseId={courseId} lessonId={showMaterialForm} onClose={() => setShowMaterialForm(null)} onSuccess={() => { setShowMaterialForm(null); fetchData(); }} />
-          )}
           {lessons.length === 0 ? (
             <p className="text-slate-500 bg-white rounded-xl border border-slate-200 p-6 text-center">No lessons yet.</p>
           ) : (
@@ -117,11 +147,21 @@ export default function InstructorCoursePage() {
                       </span>
                     </div>
                   </div>
-                  <button onClick={() => setShowMaterialForm(lesson.id)}
+                  <button onClick={() => setShowMaterialForm(showMaterialForm === lesson.id ? null : lesson.id)}
                     className="text-sm text-teal-600 hover:text-teal-700 font-medium shrink-0">
-                    + Upload File
+                    {showMaterialForm === lesson.id ? '✕ Cancel Upload' : '+ Upload File'}
                   </button>
                 </div>
+
+                {/* Inline upload form — appears inside the lesson card */}
+                {showMaterialForm === lesson.id && (
+                  <MaterialUploadForm
+                    courseId={courseId}
+                    lessonId={lesson.id}
+                    onClose={() => setShowMaterialForm(null)}
+                    onSuccess={() => { setShowMaterialForm(null); fetchData(); }}
+                  />
+                )}
                 {/* Materials list */}
                 {lesson.materials && lesson.materials.length > 0 && (
                   <div className="border-t border-slate-100 pt-3 space-y-2">
@@ -136,7 +176,7 @@ export default function InstructorCoursePage() {
                         </div>
                         <div className="flex items-center gap-3">
                           {(m.file_url || m.url) && (
-                            <a href={m.file_url || m.url} target="_blank" rel="noopener noreferrer"
+                            <a href={m.file_url || m.url} rel="noopener noreferrer"
                               className="text-xs text-teal-600 hover:text-teal-800 font-medium">View</a>
                           )}
                           <button onClick={async () => {
@@ -159,14 +199,11 @@ export default function InstructorCoursePage() {
       {tab === 'assessments' && (
         <div className="space-y-4">
           <div className="flex justify-end gap-2">
-            <button onClick={() => setShowAssessmentForm(true)}
+            <button onClick={() => navigate(`/instructor/courses/${courseId}/assessments/create`)}
               className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors">
               + New Assessment
             </button>
           </div>
-          {showAssessmentForm && (
-            <AssessmentForm courseId={courseId} onClose={() => setShowAssessmentForm(false)} onSuccess={() => { setShowAssessmentForm(false); fetchData(); }} />
-          )}
           {showQuestionForm && (
             <QuestionForm courseId={courseId} assessmentId={showQuestionForm} onClose={() => setShowQuestionForm(null)} onSuccess={() => { setShowQuestionForm(null); fetchData(); }} />
           )}
@@ -242,34 +279,94 @@ export default function InstructorCoursePage() {
 
       {/* Students tab */}
       {tab === 'students' && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          {students.length === 0 ? (
-            <p className="text-slate-500 p-6 text-center">No students enrolled yet.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="text-left px-5 py-3 font-medium text-slate-600">#</th>
-                  <th className="text-left px-5 py-3 font-medium text-slate-600">Name</th>
-                  <th className="text-left px-5 py-3 font-medium text-slate-600">Email</th>
-                  <th className="text-left px-5 py-3 font-medium text-slate-600">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {students.map((student, idx) => (
-                  <tr key={student.id} className="hover:bg-slate-50">
-                    <td className="px-5 py-3 text-slate-400">{idx + 1}</td>
-                    <td className="px-5 py-3 font-medium text-slate-800">{student.first_name} {student.last_name}</td>
-                    <td className="px-5 py-3 text-slate-600">{student.email}</td>
-                    <td className="px-5 py-3">
-                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full capitalize">{student.pivot?.status || 'active'}</span>
-                    </td>
+        <div className="space-y-4">
+          {/* Enrollment Code Panel */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="font-semibold text-slate-800">Class Join Code</h4>
+              <button
+                onClick={() => navigate(`/instructor/courses/${courseId}/ai-summary`)}
+                className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                🤖 AI Student Summary
+              </button>
+            </div>
+            <p className="text-sm text-slate-500 mb-4">
+              Share this code with students so they can join the course directly.
+            </p>
+            {course.join_code ? (
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-mono text-2xl font-bold tracking-widest text-teal-700 bg-teal-50 px-5 py-2 rounded-lg border border-teal-200">
+                  {course.join_code}
+                </span>
+                <button
+                  onClick={handleCopyCode}
+                  className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-teal-700 border border-slate-300 px-3 py-2 rounded-lg hover:border-teal-400 transition-colors"
+                >
+                  <ContentCopyIcon sx={{ fontSize: 16 }} />
+                  {codeCopied ? 'Copied!' : 'Copy'}
+                </button>
+                <button
+                  onClick={handleGenerateCode}
+                  disabled={codeLoading}
+                  className="text-sm text-slate-600 hover:text-teal-700 border border-slate-300 px-3 py-2 rounded-lg hover:border-teal-400 transition-colors disabled:opacity-50"
+                >
+                  Regenerate
+                </button>
+                <button
+                  onClick={handleRevokeCode}
+                  disabled={codeLoading}
+                  className="text-sm text-red-500 hover:text-red-700 border border-red-200 px-3 py-2 rounded-lg hover:border-red-400 transition-colors disabled:opacity-50"
+                >
+                  Revoke
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleGenerateCode}
+                disabled={codeLoading}
+                className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
+              >
+                {codeLoading ? 'Generating...' : 'Generate Join Code'}
+              </button>
+            )}
+          </div>
+
+          {/* Students table */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {students.length === 0 ? (
+              <p className="text-slate-500 p-6 text-center">No students enrolled yet.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="text-left px-5 py-3 font-medium text-slate-600">#</th>
+                    <th className="text-left px-5 py-3 font-medium text-slate-600">Name</th>
+                    <th className="text-left px-5 py-3 font-medium text-slate-600">Email</th>
+                    <th className="text-left px-5 py-3 font-medium text-slate-600">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {students.map((student, idx) => (
+                    <tr key={student.id} className="hover:bg-slate-50">
+                      <td className="px-5 py-3 text-slate-400">{idx + 1}</td>
+                      <td className="px-5 py-3 font-medium text-slate-800">{student.first_name} {student.last_name}</td>
+                      <td className="px-5 py-3 text-slate-600">{student.email}</td>
+                      <td className="px-5 py-3">
+                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full capitalize">{student.pivot?.status || 'active'}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
+      )}
+
+      {/* Calendar tab */}
+      {tab === 'calendar' && (
+        <CalendarTab courseId={courseId} />
       )}
     </div>
   );
@@ -365,12 +462,27 @@ function AssessmentForm({ courseId, onClose, onSuccess }) {
 
 function AnnouncementForm({ courseId, onClose, onSuccess }) {
   const [form, setForm] = useState({ title: '', content: '', is_pinned: false });
+  const [addToCalendar, setAddToCalendar] = useState(false);
+  const [calendarDate, setCalendarDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setSaving(true); setError('');
-    try { await api.post(`/courses/${courseId}/announcements`, form); onSuccess(); }
+    try {
+      await api.post(`/courses/${courseId}/announcements`, form);
+      // Also add to student calendars if toggled
+      if (addToCalendar && calendarDate) {
+        await api.post(`/courses/${courseId}/calendar`, {
+          title: form.title,
+          event_type: 'other',
+          start_date: calendarDate,
+          description: form.content,
+          color: '#f59e0b',
+        });
+      }
+      onSuccess();
+    }
     catch (err) { setError(err.response?.data?.message || 'Failed.'); }
     finally { setSaving(false); }
   };
@@ -384,10 +496,30 @@ function AnnouncementForm({ courseId, onClose, onSuccess }) {
           className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
         <textarea placeholder="Announcement content..." value={form.content} rows={4} required onChange={(e) => setForm({ ...form, content: e.target.value })}
           className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none" />
+
+        {/* Pin toggle */}
         <label className="flex items-center gap-2 text-sm text-slate-600">
           <input type="checkbox" checked={form.is_pinned} onChange={(e) => setForm({ ...form, is_pinned: e.target.checked })} className="rounded border-slate-300 text-teal-600" />
           <PushPinIcon sx={{ fontSize: 16 }} /> Pin this announcement
         </label>
+
+        {/* Calendar toggle */}
+        <div className="border border-slate-200 rounded-lg p-3 bg-white space-y-2">
+          <label className="flex items-center gap-2 text-sm text-slate-700 font-medium cursor-pointer">
+            <input type="checkbox" checked={addToCalendar} onChange={e => setAddToCalendar(e.target.checked)} className="rounded border-slate-300 text-teal-600" />
+            📅 Add to students' calendar
+          </label>
+          {addToCalendar && (
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Event date & time</label>
+              <input type="datetime-local" value={calendarDate} required={addToCalendar}
+                onChange={e => setCalendarDate(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              <p className="text-xs text-slate-400 mt-1">This will appear as a calendar event for all enrolled students.</p>
+            </div>
+          )}
+        </div>
+
         <div className="flex gap-3">
           <button type="submit" disabled={saving} className="bg-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors">{saving ? 'Posting...' : 'Post Announcement'}</button>
           <button type="button" onClick={onClose} className="bg-white text-slate-700 px-5 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 border border-slate-300 transition-colors">Cancel</button>
@@ -564,6 +696,106 @@ function MaterialUploadForm({ courseId, lessonId, onClose, onSuccess }) {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function CalendarTab({ courseId }) {
+  const [events, setEvents] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title: '', event_type: 'other', start_date: '', description: '', color: '#3B82F6' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const fetchEvents = () => {
+    api.get(`/calendar?course_id=${courseId}`)
+      .then(res => setEvents(res.data.events || []))
+      .catch(console.error);
+  };
+
+  useEffect(() => { fetchEvents(); }, [courseId]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); setSaving(true); setError('');
+    try {
+      await api.post(`/courses/${courseId}/calendar`, form);
+      setShowForm(false);
+      setForm({ title: '', event_type: 'other', start_date: '', description: '', color: '#3B82F6' });
+      fetchEvents();
+    } catch (err) { setError(err.response?.data?.message || 'Failed.'); }
+    finally { setSaving(false); }
+  };
+
+  const typeColors = { lesson: '#3B82F6', quiz: '#F59E0B', exam: '#EF4444', activity: '#10B981', deadline: '#EF4444', other: '#6B7280' };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <button onClick={() => setShowForm(true)}
+          className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors">
+          + Add Event
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="bg-teal-50 rounded-xl border border-teal-200 p-6">
+          <h4 className="font-semibold text-slate-800 mb-4">Add Calendar Event</h4>
+          {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <input type="text" placeholder="Event title" value={form.title} required
+              onChange={e => setForm({ ...form, title: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            <div className="grid grid-cols-2 gap-3">
+              <select value={form.event_type} onChange={e => setForm({ ...form, event_type: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+                {['lesson','quiz','exam','activity','deadline','other'].map(t => (
+                  <option key={t} value={t} className="capitalize">{t}</option>
+                ))}
+              </select>
+              <input type="datetime-local" value={form.start_date} required
+                onChange={e => setForm({ ...form, start_date: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            </div>
+            <textarea placeholder="Description (optional)" value={form.description} rows={2}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none" />
+            <div className="flex gap-3">
+              <button type="submit" disabled={saving}
+                className="bg-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors">
+                {saving ? 'Saving...' : 'Add Event'}
+              </button>
+              <button type="button" onClick={() => setShowForm(false)}
+                className="bg-white text-slate-700 px-5 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 border border-slate-300 transition-colors">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {events.length === 0 ? (
+        <p className="text-slate-500 bg-white rounded-xl border border-slate-200 p-6 text-center">No events yet.</p>
+      ) : (
+        <div className="space-y-2">
+          {events.map(e => (
+            <div key={e.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3">
+              <div className="w-3 h-10 rounded-full shrink-0" style={{ backgroundColor: e.color || typeColors[e.event_type] || '#6B7280' }} />
+              <div className="flex-1">
+                <p className="font-medium text-sm text-slate-800">{e.title}</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {new Date(e.start_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  {' · '}<span className="capitalize">{e.event_type}</span>
+                </p>
+              </div>
+              <button onClick={async () => {
+                if (!confirm('Delete this event?')) return;
+                await api.delete(`/calendar/${e.id}`);
+                fetchEvents();
+              }} className="text-xs text-red-400 hover:text-red-600">Delete</button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
