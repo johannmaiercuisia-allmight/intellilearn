@@ -100,6 +100,14 @@ export default function StudentQuizPage() {
         {/* AI Feedback Panel */}
         <AiFeedbackPanel submissionId={result.id} />
 
+        {/* AI Recommendations — shown when score is below 75% */}
+        {result.status === 'graded' && result.percentage < 75 && (
+          <AiRecommendationsPanel
+            quizAvg={result.percentage}
+            topic={assessment.topic}
+          />
+        )}
+
         {/* Show answers */}
         {result.answers && (
           <div className="space-y-3">
@@ -303,6 +311,39 @@ function AiFeedbackPanel({ submissionId }) {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+// ── AI Recommendations Panel ───────────────────────────────
+function AiRecommendationsPanel({ quizAvg, topic }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.post('/ai/recommend', { quiz_avg: quizAvg, topic: topic || '' })
+      .then(res => { if (res.data.needs_recommendation) setData(res.data); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [quizAvg, topic]);
+
+  if (loading || !data) return null;
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 space-y-3">
+      <p className="text-sm font-semibold text-amber-800">📚 Personalized Learning Recommendations</p>
+      <p className="text-sm text-amber-700">{data.message}</p>
+      <div className="space-y-2">
+        {data.recommendations.map((r, i) => (
+          <div key={i} className="bg-white rounded-lg p-3 border border-amber-100">
+            <p className="text-sm font-medium text-slate-800">{r.title}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{r.reason}</p>
+            {r.type !== 'tip' && (
+              <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full mt-1 inline-block capitalize">{r.type}</span>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

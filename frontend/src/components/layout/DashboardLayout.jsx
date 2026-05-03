@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -21,10 +22,11 @@ import ScienceIcon from '@mui/icons-material/Science';
 
 const navItems = {
   student: [
-    { label: 'Dashboard', path: '/student', icon: <DashboardIcon fontSize="small" /> },
-    { label: 'Courses', path: '/student/courses', icon: <MenuBookIcon fontSize="small" /> },
-    { label: 'Calendar', path: '/student/calendar', icon: <CalendarMonthIcon fontSize="small" /> },
-    { label: 'Profile', path: '/student/profile', icon: <PersonIcon fontSize="small" /> },
+    { label: 'Dashboard',  path: '/student',            icon: <DashboardIcon fontSize="small" /> },
+    { label: 'Courses',    path: '/student/courses',     icon: <MenuBookIcon fontSize="small" /> },
+    { label: 'Calendar',   path: '/student/calendar',    icon: <CalendarMonthIcon fontSize="small" /> },
+    { label: 'Risk Check', path: '/student/risk-check',  icon: <WarningAmberIcon fontSize="small" /> },
+    { label: 'Profile',    path: '/student/profile',     icon: <PersonIcon fontSize="small" /> },
   ],
   instructor: [
     { label: 'Dashboard', path: '/instructor', icon: <DashboardIcon fontSize="small" /> },

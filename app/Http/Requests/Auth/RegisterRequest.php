@@ -26,21 +26,21 @@ class RegisterRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:255'],
             'last_name'  => ['required', 'string', 'max:255'],
             'email'      => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password'   => ['required', 'string', 'min:8', 'confirmed'],
-            // 'confirmed' means the request must also include a
-            // 'password_confirmation' field that matches 'password'
+            'password'   => [
+                'required', 'string', 'min:8', 'confirmed',
+                'regex:/[A-Z]/',   // must have uppercase
+                'regex:/[0-9]/',   // must have number
+            ],
         ];
     }
 
-    /**
-     * Custom error messages (optional — makes errors more user-friendly).
-     */
     public function messages(): array
     {
         return [
-            'email.unique'      => 'This email is already registered.',
-            'password.confirmed' => 'Passwords do not match.',
-            'password.min'       => 'Password must be at least 8 characters.',
+            'email.unique'           => 'This email is already registered.',
+            'password.confirmed'     => 'Passwords do not match.',
+            'password.min'           => 'Password must be at least 8 characters.',
+            'password.regex'         => 'Password must contain at least one uppercase letter and one number.',
         ];
     }
 }

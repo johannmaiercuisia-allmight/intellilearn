@@ -259,7 +259,7 @@ class LessonController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'type'  => ['required', 'in:pdf,docx,video,ppt,link,other'],
-            'file'  => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,mp4,mov', 'max:51200'],
+            'file'  => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,mp4,mov', 'max:102400'],
             'url'   => ['nullable', 'url'],
             'order' => ['nullable', 'integer', 'min:0'],
         ]);

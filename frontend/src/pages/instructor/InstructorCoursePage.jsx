@@ -55,7 +55,7 @@ export default function InstructorCoursePage() {
 
   if (!course) return <p className="text-slate-500">Course not found.</p>;
 
-  const tabs = ['lessons', 'assessments', 'announcements', 'students'];
+  const tabs = ['lessons', 'assessments', 'announcements', 'students', 'calendar'];
 
   const deleteAnnouncement = async (id) => {
     if (!confirm('Delete this announcement?')) return;
@@ -362,6 +362,11 @@ export default function InstructorCoursePage() {
           </div>
         </div>
       )}
+
+      {/* Calendar tab */}
+      {tab === 'calendar' && (
+        <CalendarTab courseId={courseId} />
+      )}
     </div>
   );
 }
@@ -655,6 +660,106 @@ function MaterialUploadForm({ courseId, lessonId, onClose, onSuccess }) {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function CalendarTab({ courseId }) {
+  const [events, setEvents] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title: '', event_type: 'other', start_date: '', description: '', color: '#3B82F6' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const fetchEvents = () => {
+    api.get(`/calendar?course_id=${courseId}`)
+      .then(res => setEvents(res.data.events || []))
+      .catch(console.error);
+  };
+
+  useEffect(() => { fetchEvents(); }, [courseId]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); setSaving(true); setError('');
+    try {
+      await api.post(`/courses/${courseId}/calendar`, form);
+      setShowForm(false);
+      setForm({ title: '', event_type: 'other', start_date: '', description: '', color: '#3B82F6' });
+      fetchEvents();
+    } catch (err) { setError(err.response?.data?.message || 'Failed.'); }
+    finally { setSaving(false); }
+  };
+
+  const typeColors = { lesson: '#3B82F6', quiz: '#F59E0B', exam: '#EF4444', activity: '#10B981', deadline: '#EF4444', other: '#6B7280' };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <button onClick={() => setShowForm(true)}
+          className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors">
+          + Add Event
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="bg-teal-50 rounded-xl border border-teal-200 p-6">
+          <h4 className="font-semibold text-slate-800 mb-4">Add Calendar Event</h4>
+          {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <input type="text" placeholder="Event title" value={form.title} required
+              onChange={e => setForm({ ...form, title: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            <div className="grid grid-cols-2 gap-3">
+              <select value={form.event_type} onChange={e => setForm({ ...form, event_type: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+                {['lesson','quiz','exam','activity','deadline','other'].map(t => (
+                  <option key={t} value={t} className="capitalize">{t}</option>
+                ))}
+              </select>
+              <input type="datetime-local" value={form.start_date} required
+                onChange={e => setForm({ ...form, start_date: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            </div>
+            <textarea placeholder="Description (optional)" value={form.description} rows={2}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none" />
+            <div className="flex gap-3">
+              <button type="submit" disabled={saving}
+                className="bg-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors">
+                {saving ? 'Saving...' : 'Add Event'}
+              </button>
+              <button type="button" onClick={() => setShowForm(false)}
+                className="bg-white text-slate-700 px-5 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 border border-slate-300 transition-colors">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {events.length === 0 ? (
+        <p className="text-slate-500 bg-white rounded-xl border border-slate-200 p-6 text-center">No events yet.</p>
+      ) : (
+        <div className="space-y-2">
+          {events.map(e => (
+            <div key={e.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3">
+              <div className="w-3 h-10 rounded-full shrink-0" style={{ backgroundColor: e.color || typeColors[e.event_type] || '#6B7280' }} />
+              <div className="flex-1">
+                <p className="font-medium text-sm text-slate-800">{e.title}</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {new Date(e.start_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  {' · '}<span className="capitalize">{e.event_type}</span>
+                </p>
+              </div>
+              <button onClick={async () => {
+                if (!confirm('Delete this event?')) return;
+                await api.delete(`/calendar/${e.id}`);
+                fetchEvents();
+              }} className="text-xs text-red-400 hover:text-red-600">Delete</button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
