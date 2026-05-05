@@ -102,7 +102,7 @@ export default function StudentMaterialViewerPage() {
       <div className="flex-1">
         {material.type === 'pdf' && fileUrl ? (
           <iframe
-            src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(fileUrl)}`}
+            src={fileUrl}
             title={material.title}
             className="w-full h-full"
             style={{ minHeight: 'calc(100vh - 112px)', border: 'none' }}
