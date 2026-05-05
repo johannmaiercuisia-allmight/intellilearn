@@ -39,7 +39,12 @@ class AuthController extends Controller
             'role'       => 'student',
         ]);
 
-        event(new Registered($user));
+        try {
+            event(new Registered($user));
+        } catch (\Exception $e) {
+            // Email sending failed — log it but don't block registration
+            \Log::error('Verification email failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Registration successful. Please check your email to verify your account.',
