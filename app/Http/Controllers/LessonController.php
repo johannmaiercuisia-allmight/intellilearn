@@ -278,12 +278,11 @@ class LessonController extends Controller
             // Extract text from PDF for AI chatbot
             if ($validated['type'] === 'pdf') {
                 try {
-                    $fullPath = Storage::disk('public')->path($filePath);
                     $parser = new PdfParser();
-                    $pdf = $parser->parseFile($fullPath);
-                    $extractedText = substr($pdf->getText(), 0, 8000); // limit to 8000 chars
+                    // Read directly from the uploaded file before it's moved
+                    $pdf = $parser->parseFile($request->file('file')->getRealPath());
+                    $extractedText = substr($pdf->getText(), 0, 8000);
                 } catch (\Exception $e) {
-                    // Extraction failed — not critical, just skip
                     $extractedText = null;
                 }
             }
