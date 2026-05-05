@@ -101,18 +101,26 @@ export default function StudentMaterialViewerPage() {
 
       <div className="flex-1">
         {material.type === 'pdf' && fileUrl ? (
-          <iframe src={fileUrl} title={material.title} className="w-full h-full"
-            style={{ minHeight: 'calc(100vh - 112px)', border: 'none' }} />
+          <iframe
+            src={`https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`}
+            title={material.title}
+            className="w-full h-full"
+            style={{ minHeight: 'calc(100vh - 112px)', border: 'none' }}
+          />
         ) : material.type === 'docx' && fileUrl ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 bg-slate-50"
-            style={{ minHeight: 'calc(100vh - 112px)' }}>
-            <span className="text-6xl">📝</span>
-            <p className="text-slate-700 font-medium">{material.title}</p>
-            <p className="text-sm text-slate-500">Word documents cannot be previewed in the browser.</p>
-            <a href={fileUrl} download className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
-              Download to view
-            </a>
-          </div>
+          <iframe
+            src={`https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`}
+            title={material.title}
+            className="w-full h-full"
+            style={{ minHeight: 'calc(100vh - 112px)', border: 'none' }}
+          />
+        ) : material.type === 'ppt' && fileUrl ? (
+          <iframe
+            src={`https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`}
+            title={material.title}
+            className="w-full h-full"
+            style={{ minHeight: 'calc(100vh - 112px)', border: 'none' }}
+          />
         ) : material.type === 'link' && fileUrl ? (
           <iframe src={fileUrl} title={material.title} className="w-full h-full"
             style={{ minHeight: 'calc(100vh - 112px)', border: 'none' }} />
