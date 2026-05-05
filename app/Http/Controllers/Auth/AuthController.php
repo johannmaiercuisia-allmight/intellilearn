@@ -44,6 +44,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             // Email sending failed — log it but don't block registration
             \Log::error('Verification email failed: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
         }
 
         return response()->json([
