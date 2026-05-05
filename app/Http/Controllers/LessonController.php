@@ -269,9 +269,10 @@ class LessonController extends Controller
 
         // Handle file upload
         if ($request->hasFile('file')) {
+            $disk = app()->environment('production') ? 'r2' : 'public';
             $filePath = $request->file('file')->store(
                 "materials/course_{$course->id}/lesson_{$lesson->id}",
-                'public'
+                $disk
             );
 
             // Extract text from PDF for AI chatbot
