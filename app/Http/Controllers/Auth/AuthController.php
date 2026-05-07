@@ -32,23 +32,18 @@ class AuthController extends Controller
     public function register(RegisterRequest $request): JsonResponse
     {
         $user = User::create([
-            'first_name' => $request->first_name,
-            'last_name'  => $request->last_name,
-            'email'      => $request->email,
-            'password'   => $request->password,
-            'role'       => 'student',
+            'first_name'        => $request->first_name,
+            'last_name'         => $request->last_name,
+            'email'             => $request->email,
+            'password'          => $request->password,
+            'role'              => 'student',
+            'email_verified_at' => now(), // Auto-verify for live demo
         ]);
 
-        try {
-            event(new Registered($user));
-        } catch (\Exception $e) {
-            // Email sending failed — log it but don't block registration
-            \Log::error('Verification email failed: ' . $e->getMessage());
-            \Log::error($e->getTraceAsString());
-        }
+        $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Registration successful. Please check your email to verify your account.',
+            'message' => 'Registration successful.',
             'user'    => [
                 'id'         => $user->id,
                 'first_name' => $user->first_name,
@@ -57,6 +52,7 @@ class AuthController extends Controller
                 'role'       => $user->role,
                 'full_name'  => $user->full_name,
             ],
+            'token' => $token,
         ], 201);
     }
 
@@ -89,13 +85,6 @@ class AuthController extends Controller
         if (! $user->is_active) {
             throw ValidationException::withMessages([
                 'email' => ['Your account has been deactivated. Please contact the administrator.'],
-            ]);
-        }
-
-        // Check if email is verified
-        if (! $user->hasVerifiedEmail()) {
-            throw ValidationException::withMessages([
-                'email' => ['Please verify your email address before logging in.'],
             ]);
         }
 
@@ -167,33 +156,45 @@ class AuthController extends Controller
     }
 
     /**
-     * FORGOT PASSWORD — SEND RESET LINK
+     * FORGOT PASSWORD — RESET PASSWORD DIRECTLY
      *
      * POST /api/forgot-password
-     * Body: { email }
+     * Body: { email, password, password_confirmation }
      *
-     * Sends a password reset link to the user's email.
-     * Uses Laravel's built-in password broker.
+     * Simplified password reset: just provide email and new password.
+     * No email verification or token required.
      */
     public function forgotPassword(Request $request): JsonResponse
     {
         $request->validate([
-            'email' => ['required', 'email'],
+            'email'    => ['required', 'email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed', 'regex:/[A-Z]/', 'regex:/[0-9]/'],
         ]);
 
-        // Send the reset link — Laravel handles the email automatically
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        // Find the user by email
+        $user = User::where('email', $request->email)->first();
 
-        if ($status === Password::RESET_LINK_SENT) {
-            return response()->json([
-                'message' => 'Password reset link sent to your email.',
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'email' => ['No account found with this email address.'],
             ]);
         }
 
-        throw ValidationException::withMessages([
-            'email' => [__($status)],
+        // Check that new password is different from current
+        if (Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => ['New password must be different from your current password.'],
+            ]);
+        }
+
+        // Update password
+        $user->update(['password' => $request->password]);
+
+        // Delete all existing tokens — force re-login with new password
+        $user->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Password has been reset successfully. Please login with your new password.',
         ]);
     }
 

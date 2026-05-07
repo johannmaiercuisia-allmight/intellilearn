@@ -98,17 +98,41 @@ export default function InstructorCoursePage() {
     setTimeout(() => setCodeCopied(false), 2000);
   };
 
+  const handleDeleteCourse = async () => {
+    if (!confirm(`Are you sure you want to delete "${course.name}"? This will permanently delete all lessons, assessments, and student data. This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/courses/${courseId}`);
+      alert('Course deleted successfully.');
+      navigate('/instructor/courses');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete course.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Course header */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">
-        <h2 className="text-xl font-bold text-slate-800">{course.name}</h2>
-        <p className="text-sm text-slate-500 mt-1">{course.code} · {course.section} · {course.semester}</p>
-        <div className="flex gap-4 mt-3 text-sm text-slate-500">
-          <span>{lessons.length} lessons</span>
-          <span>{assessments.length} assessments</span>
-          <span>{students.length} students</span>
-          <span>{announcements.length} announcements</span>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-slate-800">{course.name}</h2>
+            <p className="text-sm text-slate-500 mt-1">{course.code} · {course.section} · {course.semester}</p>
+            <div className="flex gap-4 mt-3 text-sm text-slate-500">
+              <span>{lessons.length} lessons</span>
+              <span>{assessments.length} assessments</span>
+              <span>{students.length} students</span>
+              <span>{announcements.length} announcements</span>
+            </div>
+          </div>
+          <button
+            onClick={handleDeleteCourse}
+            className="text-sm text-red-500 hover:text-red-700 border border-red-200 px-4 py-2 rounded-lg hover:border-red-400 hover:bg-red-50 transition-colors font-medium"
+          >
+            Delete Course
+          </button>
         </div>
       </div>
 

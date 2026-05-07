@@ -165,15 +165,17 @@ class CourseController extends Controller
      *
      * DELETE /api/courses/{id}
      *
-     * Only admins can delete courses.
+     * Admins can delete any course.
+     * Instructors can delete their own courses.
      */
     public function destroy(Request $request, Course $course): JsonResponse
     {
         $user = $request->user();
 
-        if (! $user->isAdmin()) {
+        // Check if user is admin or the course instructor
+        if (! $user->isAdmin() && $course->instructor_id !== $user->id) {
             return response()->json([
-                'message' => 'Only administrators can delete courses.',
+                'message' => 'You do not have permission to delete this course.',
             ], 403);
         }
 

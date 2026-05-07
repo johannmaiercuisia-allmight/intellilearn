@@ -33,6 +33,11 @@ export function AuthProvider({ children }) {
 
   const register = async (data) => {
     const res = await api.post('/register', data);
+    if (res.data.token) {
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data.user));
+      setUser(res.data.user);
+    }
     return res.data;
   };
 

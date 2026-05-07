@@ -1,29 +1,32 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import logo from '../../assets/logo.png';
 import loginBg from '../../assets/login_bg.png';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ email: '', password: '', password_confirmation: '' });
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setErrors({});
     setLoading(true);
     try {
-      await api.post('/forgot-password', { email });
-      setSent(true);
+      await api.post('/forgot-password', form);
+      setSuccess(true);
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
-      setError(
-        err.response?.data?.errors?.email?.[0] ||
-        err.response?.data?.message ||
-        'Something went wrong. Please try again.'
-      );
+      if (err.response?.data?.errors) {
+        setErrors(err.response.data.errors);
+      } else {
+        setErrors({ general: [err.response?.data?.message || 'Something went wrong.'] });
+      }
     } finally {
       setLoading(false);
     }
@@ -92,34 +95,29 @@ export default function ForgotPasswordPage() {
           borderRadius: 20, padding: '40px 40px 36px',
           boxShadow: '0 8px 40px rgba(23,56,97,0.14)',
         }}>
-          {sent ? (
+          {success ? (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '3rem', marginBottom: 16 }}>📧</div>
-              <h2 style={{ fontSize: 24, fontWeight: 900, color: '#173861', marginBottom: 10 }}>Check your inbox</h2>
+              <div style={{ fontSize: '3rem', marginBottom: 16 }}>✅</div>
+              <h2 style={{ fontSize: 24, fontWeight: 900, color: '#173861', marginBottom: 10 }}>Password Reset!</h2>
               <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, marginBottom: 28 }}>
-                If <strong>{email}</strong> is registered, you'll receive a password reset link shortly.
+                Your password has been successfully reset. Redirecting to login...
               </p>
-              <Link to="/login" style={{
-                display: 'inline-block', background: '#173861', color: 'white',
-                borderRadius: 10, padding: '12px 32px', fontWeight: 700,
-                fontSize: 14, textDecoration: 'none',
-              }}>Back to Login</Link>
             </div>
           ) : (
             <>
               <h2 style={{ fontSize: 30, fontWeight: 900, color: '#173861', margin: '0 0 8px', textAlign: 'center' }}>
-                Forgot Password
+                Reset Password
               </h2>
               <p style={{ fontSize: 14, color: '#64748b', textAlign: 'center', marginBottom: 28, lineHeight: 1.6 }}>
-                Enter your email and we'll send you a link to reset your password.
+                Enter your email and new password to reset your account.
               </p>
 
-              {error && (
+              {errors.general && (
                 <div style={{
                   background: '#FEF2F2', color: '#DC2626', fontSize: 13,
                   padding: '10px 14px', borderRadius: 8, marginBottom: 16,
                   border: '1px solid #FECACA',
-                }}>{error}</div>
+                }}>{errors.general[0]}</div>
               )}
 
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -127,22 +125,60 @@ export default function ForgotPasswordPage() {
                   <label style={{ fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }}>
                     Email Address
                   </label>
-                  <div className="fp-input-wrap">
+                  <div className="fp-input-wrap" style={errors.email ? { borderColor: '#EF4444' } : {}}>
                     <span style={{ padding: '0 12px', display: 'flex', alignItems: 'center' }}>
                       <EmailOutlinedIcon sx={{ fontSize: 18, color: '#94a3b8' }} />
                     </span>
                     <input
                       type="email" className="fp-input"
-                      placeholder="abc@xyz.com"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      value={form.email}
+                      onChange={e => setForm({ ...form, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                  {errors.email && <p style={{ color: '#DC2626', fontSize: 12, marginTop: 4 }}>{errors.email[0]}</p>}
+                </div>
+
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }}>
+                    New Password
+                  </label>
+                  <div className="fp-input-wrap" style={errors.password ? { borderColor: '#EF4444' } : {}}>
+                    <span style={{ padding: '0 12px', display: 'flex', alignItems: 'center' }}>
+                      <LockOutlinedIcon sx={{ fontSize: 18, color: '#94a3b8' }} />
+                    </span>
+                    <input
+                      type="password" className="fp-input"
+                      placeholder="••••••••"
+                      value={form.password}
+                      onChange={e => setForm({ ...form, password: e.target.value })}
+                      required
+                    />
+                  </div>
+                  {errors.password && <p style={{ color: '#DC2626', fontSize: 12, marginTop: 4 }}>{errors.password[0]}</p>}
+                </div>
+
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }}>
+                    Confirm New Password
+                  </label>
+                  <div className="fp-input-wrap">
+                    <span style={{ padding: '0 12px', display: 'flex', alignItems: 'center' }}>
+                      <LockOutlinedIcon sx={{ fontSize: 18, color: '#94a3b8' }} />
+                    </span>
+                    <input
+                      type="password" className="fp-input"
+                      placeholder="••••••••"
+                      value={form.password_confirmation}
+                      onChange={e => setForm({ ...form, password_confirmation: e.target.value })}
                       required
                     />
                   </div>
                 </div>
 
                 <button type="submit" disabled={loading} className="fp-btn">
-                  {loading ? 'Sending...' : 'Send Reset Link'}
+                  {loading ? 'Resetting...' : 'Reset Password'}
                 </button>
               </form>
 

@@ -120,8 +120,13 @@ export default function LoginPage() {
     setRegErrors({});
     setRegLoading(true);
     try {
-      await register(regForm);
-      setRegSuccess(true);
+      const res = await register(regForm);
+      // Auto-login after registration
+      if (res.token) {
+        localStorage.setItem('token', res.token);
+        localStorage.setItem('user', JSON.stringify(res.user));
+      }
+      navigate('/student');
     } catch (err) {
       if (err.response?.data?.errors) setRegErrors(err.response.data.errors);
       else setRegErrors({ general: [err.response?.data?.message || 'Registration failed.'] });

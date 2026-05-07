@@ -21,12 +21,32 @@ export default function InstructorCoursesListPage() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
+  const fetchCourses = () => {
     api.get('/courses')
       .then((res) => setCourses(res.data.courses || []))
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchCourses();
   }, []);
+
+  const handleDelete = async (e, courseId, courseName) => {
+    e.preventDefault(); // Prevent navigation
+    e.stopPropagation();
+    
+    if (!confirm(`Are you sure you want to delete "${courseName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/courses/${courseId}`);
+      setCourses(courses.filter(c => c.id !== courseId));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete course.');
+    }
+  };
 
   if (loading) {
     return (
@@ -59,25 +79,54 @@ export default function InstructorCoursesListPage() {
             courses.map((course, idx) => {
               const theme = courseColors[idx % courseColors.length];
               return (
-                <Link
-                  key={course.id}
-                  to={`/instructor/courses/${course.id}`}
-                  className="course-card"
-                >
-                  <div className="course-card-left" style={{ background: theme.bg }}>
-                    {theme.icon}
-                  </div>
-                  <div className="course-card-content">
-                    <h2>{course.name}</h2>
-                    <p>{course.code} · {course.section || 'Section A'}</p>
-                    <small>{course.students_count || 0} students enrolled</small>
-                  </div>
-                  <div className="course-card-action" style={{
-                    background: '#ECFDF5', color: '#059669',
-                  }}>
-                    →
-                  </div>
-                </Link>
+                <div key={course.id} style={{ position: 'relative' }}>
+                  <Link
+                    to={`/instructor/courses/${course.id}`}
+                    className="course-card"
+                  >
+                    <div className="course-card-left" style={{ background: theme.bg }}>
+                      {theme.icon}
+                    </div>
+                    <div className="course-card-content">
+                      <h2>{course.name}</h2>
+                      <p>{course.code} · {course.section || 'Section A'}</p>
+                      <small>{course.students_count || 0} students enrolled</small>
+                    </div>
+                    <div className="course-card-action" style={{
+                      background: '#ECFDF5', color: '#059669',
+                    }}>
+                      →
+                    </div>
+                  </Link>
+                  <button
+                    onClick={(e) => handleDelete(e, course.id, course.name)}
+                    style={{
+                      position: 'absolute',
+                      top: 12,
+                      right: 12,
+                      background: '#FEE2E2',
+                      color: '#DC2626',
+                      border: 'none',
+                      borderRadius: 6,
+                      padding: '6px 12px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      zIndex: 10,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = '#FCA5A5';
+                      e.target.style.color = '#991B1B';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = '#FEE2E2';
+                      e.target.style.color = '#DC2626';
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
               );
             })
           )}
