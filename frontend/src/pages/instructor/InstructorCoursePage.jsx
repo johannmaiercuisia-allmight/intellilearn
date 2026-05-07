@@ -112,6 +112,19 @@ export default function InstructorCoursePage() {
     }
   };
 
+  const handleDeleteLesson = async (lessonId, lessonTitle) => {
+    if (!confirm(`Are you sure you want to delete "${lessonTitle}"? This will permanently delete all materials and student progress for this lesson. This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/courses/${courseId}/lessons/${lessonId}`);
+      setLessons(lessons.filter(l => l.id !== lessonId));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete lesson.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Course header */}
@@ -162,7 +175,7 @@ export default function InstructorCoursePage() {
             lessons.map((lesson) => (
               <div key={lesson.id} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-1">
                     <h4 className="font-semibold text-slate-800">Lesson {lesson.order + 1}: {lesson.title}</h4>
                     <div className="flex items-center gap-2 mt-1.5">
                       {lesson.topic && <span className="text-xs bg-teal-50 text-teal-600 px-2 py-0.5 rounded-full">{lesson.topic}</span>}
@@ -171,10 +184,17 @@ export default function InstructorCoursePage() {
                       </span>
                     </div>
                   </div>
-                  <button onClick={() => setShowMaterialForm(showMaterialForm === lesson.id ? null : lesson.id)}
-                    className="text-sm text-teal-600 hover:text-teal-700 font-medium shrink-0">
-                    {showMaterialForm === lesson.id ? '✕ Cancel Upload' : '+ Upload File'}
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => setShowMaterialForm(showMaterialForm === lesson.id ? null : lesson.id)}
+                      className="text-sm text-teal-600 hover:text-teal-700 font-medium">
+                      {showMaterialForm === lesson.id ? '✕ Cancel' : '+ Upload'}
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteLesson(lesson.id, lesson.title)}
+                      className="text-sm text-red-500 hover:text-red-700 font-medium">
+                      Delete
+                    </button>
+                  </div>
                 </div>
 
                 {/* Inline upload form — appears inside the lesson card */}
